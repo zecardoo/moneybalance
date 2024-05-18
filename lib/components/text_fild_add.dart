@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TextFormFildAdd extends StatelessWidget {
+  final TextEditingController controller;
   final TextInputType keyboardtype;
   final bool inputnumber;
   final double padding;
@@ -11,6 +11,7 @@ class TextFormFildAdd extends StatelessWidget {
 
   const TextFormFildAdd({
      super.key,
+    required this.controller,
     required this.keyboardtype,
     required this.inputnumber,
     required this.padding,
@@ -22,6 +23,7 @@ class TextFormFildAdd extends StatelessWidget {
     return  Padding(
       padding: EdgeInsets.symmetric(horizontal: padding),
       child: TextFormField(
+        controller: controller,
         //for text to start from left or right
         textAlign: TextAlign.right,
         // select the datat type numbers only or text with number 

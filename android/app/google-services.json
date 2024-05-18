@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "903746756158",
+    "project_id": "moenybalance",
+    "storage_bucket": "moenybalance.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:903746756158:android:967d5a9f2b795048c3fb6f",
+        "android_client_info": {
+          "package_name": "com.example.moneybalance"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqikRudQArRy2fnFWCUQEmOwd03U4kh28"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
