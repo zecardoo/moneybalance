@@ -1,13 +1,17 @@
-// ignore_for_file: unnecessary_null_comparison
+// ignore_for_file: unnecessary_null_comparison, non_constant_identifier_names
 
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
+import 'package:moneybalance/bloc/record_bloc.dart';
+import 'package:moneybalance/bloc/record_event.dart';
+import 'package:moneybalance/bloc/record_state.dart';
 import 'package:moneybalance/components/text_fild_add.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -27,6 +31,7 @@ class _AddRecordState extends State<AddRecord> {
   final _formKey = GlobalKey<FormState>();
   File? _image;
   String? _imagePath;
+
   final picker = ImagePicker();
 
   @override
@@ -44,32 +49,6 @@ class _AddRecordState extends State<AddRecord> {
 
   }
 
-  void _add_new_record(String forhim, String onhim){
-    // Get a reference to the Firestore database
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    
-    // Get a reference to the "databes name" collection
-    final CollectionReference record = firestore.collection('record');
-
-    record.add({
-      'name': nameController.text,
-      'details': detailsController.text,
-      'amount': amountController.text,
-      'date': _dueDate,
-      'image': _imagePath,
-      'forhim': forhim,
-      'onhim': onhim
-      // 'image': image
-      
-    }).then((DocumentReference document) {
-      //Here, i stands for the info level,
-      logger.i('added successfully');
-    }).catchError((error) {
-      //Here, i stands for the info level,
-      logger.i('Error adding document: $error');
-    });
-
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,43 +57,71 @@ class _AddRecordState extends State<AddRecord> {
         backgroundColor: Colors.blue[900],
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                // display the input
-                Row(children: [
-                  Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
-                  Flexible(child: TextFormFildAdd(hinttext: 'الأسم',controller: nameController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
-                ]),
-                TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00),
-                const SizedBox(height: 20),
-
-                // display the date and image
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _image == null ? const Text('') : clickableImage(),
-                    const SizedBox(width: 10),
-                    IconButton(onPressed: () => showOptions(), icon: const Icon(Icons.add_a_photo)),
-                    _buildDueDateButton(),
-                  ],
+      body: BlocListener<RecordBloc, RecordState>(
+          bloc: BlocProvider.of<RecordBloc>(context),
+          listener: (context, state) {
+            // TODO: implement listener
+            if(state is RecordSuccess){
+              // On success, pop the current screen
+      
+              Navigator.pop(context, '/');
+      
+            }else if(state is RecordFailure){
+              // On failure, show a snackbar with the error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error, style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
+                  backgroundColor: Colors.red,
                 ),
-
-                const SizedBox(height: 30),
-
-                // display the submit button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _IconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded),
-                    const SizedBox(width: 20),
-                    _IconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded),
-                  ],
-                )
-              ],
+                
+              );
+            }else if(state is RecordImagePicked){
+              // When an image is picked, update the state
+              setState(() {
+                _image = state.image;
+                _saveImage(_image!);
+                _imagePath = state.image.path;
+              });
+            }
+          },
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // display the input
+                  Row(children: [
+                    Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
+                    Flexible(child: TextFormFildAdd(hinttext: 'الأسم',controller: nameController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
+                  ]),
+                  TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00),
+                  const SizedBox(height: 20),
+                  
+                  // display the date and image
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _image == null ? const Text('') : clickableImage(),
+                      const SizedBox(width: 10),
+                      IconButton(onPressed: () => showOptions(), icon: const Icon(Icons.add_a_photo)),
+                      _buildDueDateButton(),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // display the submit button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _IconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded),
+                      const SizedBox(width: 20),
+                      _IconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded),
+                    ],
+                  )
+                ],
+              ),
             ),
           ),
         ),
@@ -129,7 +136,24 @@ class _AddRecordState extends State<AddRecord> {
     return ElevatedButton.icon(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
-          _add_new_record(amountController.text, '0');
+          context.read<RecordBloc>().add(
+            AddRecordEvent(
+              name: nameController.text,
+              details: detailsController.text,
+              amount: amountController.text,
+              date: _dueDate,
+              imagePath: _imagePath,
+              forhim: amountController.text,
+              onhim: '0'
+            ),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
+              backgroundColor: Colors.green,
+            ),
+                  
+          );
           Navigator.pop(context, '/');
         }
       },
@@ -149,11 +173,30 @@ class _AddRecordState extends State<AddRecord> {
     );
   }
 
+
+
   Widget _IconButtonOnhim(String title, Color? color, IconData? icon) {
     return ElevatedButton.icon(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
-          _add_new_record('0', amountController.text);
+         context.read<RecordBloc>().add(
+            AddRecordEvent(
+              name: nameController.text,
+              details: detailsController.text,
+              amount: amountController.text,
+              date: _dueDate,
+              imagePath: _imagePath,
+              forhim: '0',
+              onhim: amountController.text
+            ),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
+              backgroundColor: Colors.green,
+            ),
+                  
+          );
           Navigator.pop(context, '/');
         }
       },
@@ -172,6 +215,8 @@ class _AddRecordState extends State<AddRecord> {
       ),
     );
   }
+
+
 
   // button that holds the result of date
   Widget _buildDueDateButton() {
@@ -190,6 +235,8 @@ class _AddRecordState extends State<AddRecord> {
     );
   }
 
+
+
   // function to set the date
   Future<void> _selectDate() async {
     final selectDate = await showDatePicker(context: context, firstDate: DateTime.now(), lastDate: DateTime(2100));
@@ -200,25 +247,7 @@ class _AddRecordState extends State<AddRecord> {
     }
   }
 
-  // Image Picker function to get image from gallery
-  Future pickImageFromGallery() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    setState(() {
-      if (pickedFile != null) {
-        _saveImage(File(pickedFile.path));
-      }
-    });
-  }
 
-  // Image Picker function to get image from camera
-  Future pickImageFromCamera() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-    setState(() {
-      if (pickedFile != null) {
-        _saveImage(File(pickedFile.path));
-      }
-    });
-  }
 
   Future<void> _saveImage(File image) async {
     final directory = await getApplicationDocumentsDirectory();
@@ -240,6 +269,8 @@ class _AddRecordState extends State<AddRecord> {
     });
   }
 
+
+
   // Show options to get image from camera or gallery
   Future showOptions() async {
     showCupertinoModalPopup(
@@ -249,10 +280,10 @@ class _AddRecordState extends State<AddRecord> {
           CupertinoActionSheetAction(
             child: Text('الهاتف', style: GoogleFonts.readexPro()),
             onPressed: () {
+              // get image from gallery form record_bloc
+              context.read<RecordBloc>().add(PickImageFromGalleryEvent());
               // close the options modal
               Navigator.of(context).pop();
-              // get image from gallery
-              pickImageFromGallery();
             },
           ),
           CupertinoActionSheetAction(
@@ -260,14 +291,17 @@ class _AddRecordState extends State<AddRecord> {
             onPressed: () {
               // close the options modal
               Navigator.of(context).pop();
-              // get image from camera
-              pickImageFromCamera();
+              
+              // get image from camera form record_bloc
+             context.read<RecordBloc>().add(PickImageFromCameraEvent());
             },
           ),
         ],
       ),
     );
   }
+
+
 
   // display image on big screen
   Widget clickableImage() {
@@ -310,6 +344,8 @@ class _AddRecordState extends State<AddRecord> {
       child: Image.file(_image!, width: 30),
     );
   }
+
+
 
   // Delete image function
   Future<void> _deleteImage() async {
