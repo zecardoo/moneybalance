@@ -103,6 +103,7 @@ class _HomePageState extends State<HomePage> {
                 final data = snapshot.data!.docs[index];
                 return Column(
                   children: [
+                    
                     GestureDetector(
                       
                       child: Padding(
