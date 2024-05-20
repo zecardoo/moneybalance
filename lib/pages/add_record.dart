@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,6 +22,8 @@ class AddRecord extends StatefulWidget {
 }
 
 class _AddRecordState extends State<AddRecord> {
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
   final Logger logger = Logger();
   final nameController = TextEditingController(); 
   final detailsController = TextEditingController();
@@ -31,7 +32,6 @@ class _AddRecordState extends State<AddRecord> {
   final _formKey = GlobalKey<FormState>();
   File? _image;
   String? _imagePath;
-
   final picker = ImagePicker();
 
   @override
@@ -60,7 +60,6 @@ class _AddRecordState extends State<AddRecord> {
       body: BlocListener<RecordBloc, RecordState>(
           bloc: BlocProvider.of<RecordBloc>(context),
           listener: (context, state) {
-            // TODO: implement listener
             if(state is RecordSuccess){
               // On success, pop the current screen
       
@@ -68,7 +67,7 @@ class _AddRecordState extends State<AddRecord> {
       
             }else if(state is RecordFailure){
               // On failure, show a snackbar with the error message
-              ScaffoldMessenger.of(context).showSnackBar(
+               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.error, style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
                   backgroundColor: Colors.red,
@@ -105,7 +104,7 @@ class _AddRecordState extends State<AddRecord> {
                       _image == null ? const Text('') : clickableImage(),
                       const SizedBox(width: 10),
                       IconButton(onPressed: () => showOptions(), icon: const Icon(Icons.add_a_photo)),
-                      _buildDueDateButton(),
+                      _ateButton(),
                     ],
                   ),
                   
@@ -147,14 +146,13 @@ class _AddRecordState extends State<AddRecord> {
               onhim: '0'
             ),
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
-              backgroundColor: Colors.green,
-            ),
-                  
-          );
-          Navigator.pop(context, '/');
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   SnackBar(
+          //     content: Text('تم حذف الصورة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
+          //     backgroundColor: Colors.green,
+          //     behavior: SnackBarBehavior.floating,
+          //   ),
+          // );
         }
       },
       icon: Icon(icon, size: 30, color: color),
@@ -190,14 +188,15 @@ class _AddRecordState extends State<AddRecord> {
               onhim: amountController.text
             ),
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
-              backgroundColor: Colors.green,
-            ),
-                  
-          );
-          Navigator.pop(context, '/');
+         
+          // ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            // SnackBar(
+            //   content: Text('تم حذف الصورة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
+            //   backgroundColor: Colors.green,
+            //   behavior: SnackBarBehavior.floating,
+
+            // )
+          // );
         }
       },
       icon: Icon(icon, size: 30, color: color),
@@ -219,7 +218,7 @@ class _AddRecordState extends State<AddRecord> {
 
 
   // button that holds the result of date
-  Widget _buildDueDateButton() {
+  Widget _ateButton() {
     return TextButton(
       onPressed: () => _selectDate(),
       child: Text(
@@ -356,13 +355,17 @@ class _AddRecordState extends State<AddRecord> {
         setState(() {
           _image = null;
         });
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        
+       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('تم حذف الصورة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
             backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+
           ),
         );
+        Navigator.pop(context);
+        
       } catch (e) {
         logger.e(e);
         ScaffoldMessenger.of(context).showSnackBar(

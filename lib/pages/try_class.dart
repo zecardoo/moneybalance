@@ -1,100 +1,76 @@
+// Widget displayRecord () {
+    
+//     return StreamBuilder(
+//       stream: FirebaseFirestore.instance.collection('record').snapshots(),
+//       builder: (context, snapshot) {
+//          //if has error 
+//           if (snapshot.hasError) {
+//             return Center(
+//               child: Text('Error: ${snapshot.error}'),
+//             );
+//           }
 
-import 'dart:io';
+//           // if correct
+//           if (snapshot.connectionState == ConnectionState.waiting) {
+//             return Center(
+//               child: SpinKitSquareCircle(
+//                 color: Colors.blue[900],
+//               ),
+//             );
+//           }
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+//           return ListView.builder(
+//             itemCount: snapshot.data!.docs.length,
+//             itemBuilder: (BuildContext context, int index) {
+//               final data = snapshot.data!.docs[index];
+//               return Table(
+//                     children: [
+//                       TableRow(
+//                         decoration: const BoxDecoration(
+//                           border: Border(bottom: BorderSide(color: Color.fromARGB(255, 218, 218, 218)))
+                          
+//                         ),
+//                         children: [
+//                           const Padding(
+//                             padding: EdgeInsets.symmetric(vertical: 15),
+//                             child: TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Icon(
+//                               Icons.keyboard_arrow_up, 
+//                               color: Colors.green,
+//                               size: 30,
+//                             )),
+//                           ),
+                          
+                                          
+//                           TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Text(data['amount'], 
+//                           style: GoogleFonts.varelaRound(textStyle: TextStyle(
+//                             fontSize: 16,
+//                             color: Colors.grey[700]
+//                           )),)),
 
-void main() {
-  runApp(MyApp());
-}
+//                           TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Text(data['amount'], 
+//                           style: GoogleFonts.varelaRound(textStyle: TextStyle(
+//                             fontSize: 16,
+//                             color: Colors.grey[700]
+//                           )),)),
+                          
+//                           TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Text(data['name'], 
+//                           style: GoogleFonts.varelaRound(textStyle: TextStyle(
+//                             fontSize: 18,
+//                             color: Colors.grey[700],
+//                           )))),
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  late File _image;
-  final picker = ImagePicker();
-
-  //Image Picker function to get image from gallery
-  Future pickImageFromGallery() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    setState(() {
-      if (pickedFile != null) {
-        _image = File(pickedFile.path);
-      }
-    });
-  }
-
-  //Image Picker function to get image from camera
-  Future pickImageFromCamera() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-
-    setState(() {
-      if (pickedFile != null) {
-        _image = File(pickedFile.path);
-      }
-    });
-  }
-
-  //Show options to get image from camera or gallery
-  Future showOptions() async {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) => CupertinoActionSheet(
-        actions: [
-          CupertinoActionSheetAction(
-            child: Text('Photo Gallery'),
-            onPressed: () {
-              // close the options modal
-              Navigator.of(context).pop();
-              // get image from gallery
-              pickImageFromGallery();
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text('Camera'),
-            onPressed: () {
-              // close the options modal
-              Navigator.of(context).pop();
-              // get image from camera
-              pickImageFromCamera();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Image Picker Example'),
-      ),
-      body: Column(
-        children: [
-          TextButton(
-            child: Text('Select Image'),
-            onPressed: showOptions,
-          ),
-          Center(
-            child: _image == null ? Text('No Image selected') : Image.file(_image),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//                           TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: IconButton(onPressed: () {}, icon: Icon(
+//                             Icons.add, 
+//                             size: 30, 
+//                             color: Colors.blue[900],
+//                           )))
+//                         ]
+//                       ),
+//                     ],
+//                   );
+          
+//             },
+//           );
+//       },
+//     );
+//   }  show this Incorrect use of ParentDataWidget.

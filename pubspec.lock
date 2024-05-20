@@ -17,6 +17,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  badges:
+    dependency: "direct main"
+    description:
+      name: badges
+      sha256: a7b6bbd60dce418df0db3058b53f9d083c22cdb5132a052145dc267494df0b84
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.2"
   bloc:
     dependency: transitive
     description:
@@ -209,43 +217,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.17.0"
-  firebase_storage:
-    dependency: "direct main"
-    description:
-      name: firebase_storage
-      sha256: da76ca9c11d795c4bae1bd13b31d54bb9eb9ccbee7eb5f6b86b8294370e9d488
-      url: "https://pub.dev"
-    source: hosted
-    version: "11.7.5"
-  firebase_storage_platform_interface:
-    dependency: transitive
-    description:
-      name: firebase_storage_platform_interface
-      sha256: be17bfa9110a6429b40dd3760c755034079fd734aa1dd2476d5638ab780cc508
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.1.20"
-  firebase_storage_web:
-    dependency: transitive
-    description:
-      name: firebase_storage_web
-      sha256: "5219c20c0768a8e2ffedf0a116b7bc80ab32fcc6e2cbd50cbde14f8c4575c3f4"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.9.5"
   flutter:
     dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_awesome_calculator:
-    dependency: "direct main"
-    description:
-      name: flutter_awesome_calculator
-      sha256: "74721355c33c58c722badf708903c8914ed7876f6f73ea0f4d700e4325076e8b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0+1"
   flutter_bloc:
     dependency: "direct main"
     description:
@@ -432,14 +408,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.8.0"
-  math_expressions:
-    dependency: transitive
-    description:
-      name: math_expressions
-      sha256: db0b72d867491c4e53a1c773e2708d5d6e94bbe06be07080fc9f896766b9cd3d
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.5.0"
   meta:
     dependency: transitive
     description:

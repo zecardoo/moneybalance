@@ -15,6 +15,9 @@ void main() async{
     options: DefaultFirebaseOptions.android,
   );
 
+  final GlobalKey<ScaffoldMessengerState> scaffoldKey = GlobalKey<ScaffoldMessengerState>();
+
+
   runApp(MultiBlocProvider(
       providers: [
         BlocProvider<RecordBloc>(
@@ -23,6 +26,8 @@ void main() async{
       ],
       
       child: MaterialApp(
+        scaffoldMessengerKey: scaffoldKey,
+        initialRoute: '/',
         routes: {
           '/': (context) => const HomePage(),
           '/addRecord': (context) => const AddRecord(),
