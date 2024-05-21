@@ -104,7 +104,7 @@ class _AddRecordState extends State<AddRecord> {
                       _image == null ? const Text('') : clickableImage(),
                       const SizedBox(width: 10),
                       IconButton(onPressed: () => showOptions(), icon: const Icon(Icons.add_a_photo)),
-                      _ateButton(),
+                      _DateButton(),
                     ],
                   ),
                   
@@ -141,6 +141,7 @@ class _AddRecordState extends State<AddRecord> {
               details: detailsController.text,
               amount: amountController.text,
               date: _dueDate,
+              createdAt: DateTime.now(),
               imagePath: _imagePath,
               forhim: amountController.text,
               onhim: '0'
@@ -183,6 +184,7 @@ class _AddRecordState extends State<AddRecord> {
               details: detailsController.text,
               amount: amountController.text,
               date: _dueDate,
+              createdAt: DateTime.now(),
               imagePath: _imagePath,
               forhim: '0',
               onhim: amountController.text
@@ -218,7 +220,7 @@ class _AddRecordState extends State<AddRecord> {
 
 
   // button that holds the result of date
-  Widget _ateButton() {
+  Widget _DateButton() {
     return TextButton(
       onPressed: () => _selectDate(),
       child: Text(

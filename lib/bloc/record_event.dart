@@ -16,6 +16,7 @@ class AddRecordEvent extends RecordEvent {
   final String details;
   final String amount;
   final DateTime date;
+  final DateTime createdAt;
   final String? imagePath;
   final String forhim;
   final String onhim;
@@ -25,6 +26,7 @@ class AddRecordEvent extends RecordEvent {
     required this.details,
     required this.amount,
     required this.date,
+    required this.createdAt,
     this.imagePath,
     required this.forhim,
     required this.onhim,

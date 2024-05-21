@@ -16,6 +16,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+    late Map<String, dynamic> documentData;
+
 
 
   
@@ -71,97 +73,132 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> refreshTable () async {
   
-    setState(() {
-      
-    });
+    displayRecord();
   }
+  
   Widget displayRecord () {
     return RefreshIndicator(
       onRefresh: refreshTable,
       child: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('record').snapshots(),
+        stream: FirebaseFirestore.instance
+          .collection('record')
+          .orderBy('createdAt', descending: true) // Order by 'createdAt' in descending order
+          .snapshots(),
         builder: (context, snapshot) {
-           //if has error 
-            if (snapshot.hasError) {
-              return Center(
-                child: Text('Error: ${snapshot.error}'),
-              );
-            }
+          //if has error 
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
       
-            // if correct
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: Colors.blue[900],
-                ),
-              );
-            }
+          // if correct
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: SpinKitFadingCircle(
+                color: Colors.blue[900],
+              ),
+            );
+          }
+          // if no data in collection
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(child: Text('لاتوجد بيانات متاحة ', style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 30)),));
+          }
       
             return ListView.builder(
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (BuildContext context, int index) {
-                final data = snapshot.data!.docs[index];
-                return Column(
-                  children: [
+              final data = snapshot.data!.docs[index];
+                
+              final subCollection = FirebaseFirestore.instance.collection('record').doc(data.id).collection('balance');
+               
+              return Column(
+                children: [
+                  StreamBuilder(
+                    stream: subCollection.snapshots(),
+                    builder: (context, subSnapshot) {
+                      if (subSnapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ${subSnapshot.error}'),
+                        );
+                      }
                     
-                    GestureDetector(
-                      
-                      child: Padding(
-                        padding: const EdgeInsets.all(0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center, // Adjust as needed
-                          children: [
-                            const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30,),
+                      // if correct
+                      // if (subSnapshot.connectionState == ConnectionState.waiting) {
+                      //   return Center(
+                      //     child: SpinKitFadingCircle(
+                      //       color: Colors.blue[900],
+                      //     ),
+                      //   );
+                      // }
+
+                      // if no data in collection
+                      if (!subSnapshot.hasData || subSnapshot.data!.docs.isEmpty) {
+                        return const Text('');
+                      }
+
+                      int subDocCount = subSnapshot.data!.docs.length;
+
+                      return   GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
+                        child: Padding(
+                          padding: const EdgeInsets.all(0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center, // Adjust as needed
+                            children: [
+                              const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30,),
+                                  
+                              const Spacer(), // Adjust spacing as needed
+                                  
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  data['amount'],
+                                  style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
                             
-                            const Spacer(), // Adjust spacing as needed
-                            
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                data['amount'],
-                                style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
-                      
+                                ),
                               ),
-                            ),
-                        
-                            const Spacer(), // Adjust spacing as needed
-                            
-                            badges.Badge(
-                              badgeContent: Text(
-                                data['amount'],
-                                style: GoogleFonts.readexPro(textStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+                                
+                              const Spacer(), // Adjust spacing as needed
+                                    
+                              badges.Badge(
+                                badgeContent: Text(
+                                  '$subDocCount',
+                                  style: GoogleFonts.readexPro(textStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+                                ),
+                                badgeStyle: const badges.BadgeStyle(badgeColor: Colors.blueAccent),
                               ),
-                              badgeStyle: const badges.BadgeStyle(badgeColor: Colors.blueAccent),
-                            ),
-                        
-                            const Spacer(), // Adjust spacing as needed
-                            
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                data['name'],
-                                style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.grey[700])),
-                                textAlign: TextAlign.right,
+                                
+                              const Spacer(), // Adjust spacing as needed
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  data['name'],
+                                  style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.grey[700])),
+                                  textAlign: TextAlign.right,
+                                ),
                               ),
-                            ),
-                        
-                            const Spacer(), // Adjust spacing as needed
-                            // const SizedBox(width: 15),
-                            IconButton(
-                              onPressed: () {}, 
-                              icon: Icon(Icons.add, size: 30, color: Colors.blue[900]),
-                            ),  
-                      
-                          ],
+                                
+                              const Spacer(), // Adjust spacing as needed
+                              // const SizedBox(width: 15),
+                              IconButton(
+                                onPressed: () {}, 
+                                icon: Icon(Icons.add, size: 30, color: Colors.blue[900]),
+                              ),  
+                            
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                    const Divider() ,                   
-                  ],
-                );
+                      );
+                    },
+                  ),
+                  const Divider() ,                   
+
+                ],
+              );
             
-              },
-            );
+            },
+          );
         },
       ),
     );

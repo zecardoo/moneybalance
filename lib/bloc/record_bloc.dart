@@ -28,9 +28,11 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
       final DocumentReference  record =  await firestore.collection('record').add({
         'name': event.name,
         'amount': event.amount,
+        'createdAt':event.date,
       });
 
       await record.collection('balance').add({
+        'amount': event.amount,
         'details': event.details,
         'date': event.date,
         'image': event.imagePath,
@@ -38,7 +40,7 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
         'onhim': event.onhim
       });
 
-      emit(RecordSuccess('Successfully Added'.toString())); // Emit success state
+      emit(RecordSuccess()); // Emit success state
     } catch (error) {
       emit(RecordFailure(error.toString())); // Emit failure state with error message
     }

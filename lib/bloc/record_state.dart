@@ -17,13 +17,7 @@ class RecordInitial extends RecordState {}
 class RecordLoading extends RecordState {}
 
 // Success state
-class RecordSuccess extends RecordState {
-  final String success;
-  const RecordSuccess(this.success);
-
-  @override
-  List<Object> get props => [success];
-}
+class RecordSuccess extends RecordState {}
 
 // Failure state with an error message
 class RecordFailure extends RecordState {
