@@ -28,13 +28,14 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
       final DocumentReference  record =  await firestore.collection('record').add({
         'name': event.name,
         'amount': event.amount,
-        'createdAt':event.date,
+        'createdAt':event.createdAt,
       });
 
       await record.collection('balance').add({
         'amount': event.amount,
         'details': event.details,
         'date': event.date,
+        'createdAt':event.createdAt,
         'image': event.imagePath,
         'forhim': event.forhim,
         'onhim': event.onhim

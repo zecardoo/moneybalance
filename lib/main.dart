@@ -23,9 +23,9 @@ void main() async {
       ),
     ],
     child: MaterialApp(
-      
+     
       scaffoldMessengerKey: scaffoldKey,
-      initialRoute: '/',
+      // initialRoute: '/',
       onGenerateRoute: (settings) {
         if(settings.name == '/displayRecord'){
           // Pass the argument to DisplayRecord widget
@@ -40,8 +40,21 @@ void main() async {
         '/': (context) => const HomePage(),
         '/addRecord': (context) => const AddRecord(),
       },
+      theme: ThemeData(
+        primarySwatch: Colors.red,
+        appBarTheme: AppBarTheme(
+          color: Colors.indigo[600], // Regular AppBar background color
+        ),
+        bottomAppBarTheme: BottomAppBarTheme(color: Colors.indigo[600]),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(backgroundColor: Colors.indigo[600]),
+        scaffoldBackgroundColor: Colors.white,
+
+        // fontFamily: FontFeature.numerators()
+      ),
       debugShowCheckedModeBanner: false,
+       
+      ),
       
     ),
-  ));
+  );
 }

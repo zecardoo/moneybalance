@@ -54,7 +54,7 @@ class _AddRecordState extends State<AddRecord> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: Colors.blue[900],
+        // backgroundColor: Colors.indigo[900],
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: BlocListener<RecordBloc, RecordState>(
@@ -139,21 +139,21 @@ class _AddRecordState extends State<AddRecord> {
             AddRecordEvent(
               name: nameController.text,
               details: detailsController.text,
-              amount: amountController.text,
+              amount: double.parse(amountController.text),
               date: _dueDate,
               createdAt: DateTime.now(),
               imagePath: _imagePath,
-              forhim: amountController.text,
-              onhim: '0'
+              forhim: double.parse(amountController.text),
+              onhim: 0
             ),
           );
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   SnackBar(
-          //     content: Text('تم حذف الصورة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
-          //     backgroundColor: Colors.green,
-          //     behavior: SnackBarBehavior.floating,
-          //   ),
-          // );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       },
       icon: Icon(icon, size: 30, color: color),
@@ -167,7 +167,7 @@ class _AddRecordState extends State<AddRecord> {
         ),
       ),
       style: ButtonStyle(
-        backgroundColor: MaterialStateColor.resolveWith((states) => Colors.blue[900]!),
+        backgroundColor: WidgetStateColor.resolveWith((states) => Colors.indigo[600]!),
       ),
     );
   }
@@ -182,23 +182,23 @@ class _AddRecordState extends State<AddRecord> {
             AddRecordEvent(
               name: nameController.text,
               details: detailsController.text,
-              amount: amountController.text,
+              amount: double.parse(amountController.text),
               date: _dueDate,
               createdAt: DateTime.now(),
               imagePath: _imagePath,
-              forhim: '0',
-              onhim: amountController.text
+              forhim: 0,
+              onhim: double.parse(amountController.text)
             ),
           );
          
-          // ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            // SnackBar(
-            //   content: Text('تم حذف الصورة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
-            //   backgroundColor: Colors.green,
-            //   behavior: SnackBarBehavior.floating,
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
 
-            // )
-          // );
+            )
+          );
         }
       },
       icon: Icon(icon, size: 30, color: color),
@@ -212,7 +212,7 @@ class _AddRecordState extends State<AddRecord> {
         ),
       ),
       style: ButtonStyle(
-        backgroundColor: MaterialStateColor.resolveWith((states) => Colors.blue[900]!),
+        backgroundColor: WidgetStateColor.resolveWith((states) => Colors.indigo[600]!),
       ),
     );
   }
@@ -323,7 +323,7 @@ class _AddRecordState extends State<AddRecord> {
                       _deleteImage();
                     },
                     style: const ButtonStyle(
-                      padding: MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 90)),
+                      padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 90)),
                     ),
                     child: Text(
                       'حذف',

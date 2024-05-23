@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:badges/badges.dart' as badges;
@@ -33,7 +32,7 @@ class _HomePageState extends State<HomePage> {
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               SliverAppBar(
-                backgroundColor: Colors.blue[900],
+                // backgroundColor: Colors.blue[900],
                 // pinned: true,
                 floating: true,
                 forceElevated: innerBoxIsScrolled,
@@ -54,7 +53,7 @@ class _HomePageState extends State<HomePage> {
             Navigator.pushNamed(context, '/addRecord');
           },
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-          backgroundColor: Colors.blue[900],
+          // backgroundColor: Colors.blue[900],
           child: const Icon(Icons.add, color: Colors.white,),
         ),
         
@@ -62,10 +61,10 @@ class _HomePageState extends State<HomePage> {
 
         // fix why show erros here 
         
-        bottomNavigationBar: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
+        bottomNavigationBar: const BottomAppBar(
+          shape: CircularNotchedRectangle(),
           // notchMargin: 5,
-          color: Colors.blue[900],
+          // color: Colors.blue[900],
           height: 50,
         ),
     );
@@ -102,7 +101,7 @@ class _HomePageState extends State<HomePage> {
           }
           // if no data in collection
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('لاتوجد بيانات متاحة ', style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 30)),));
+            return const Text('');
           }
       
             return ListView.builder(
@@ -153,7 +152,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  data['amount'],
+                                   '${data['amount']}',
                                   style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
                             
                                 ),

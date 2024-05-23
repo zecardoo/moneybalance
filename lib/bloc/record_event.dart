@@ -14,12 +14,12 @@ abstract class RecordEvent  extends  Equatable{
 class AddRecordEvent extends RecordEvent {
   final String name;
   final String details;
-  final String amount;
+  final double amount;
   final DateTime date;
   final DateTime createdAt;
   final String? imagePath;
-  final String forhim;
-  final String onhim;
+  final double forhim;
+  final double onhim;
 
    const AddRecordEvent({
     required this.name,
@@ -33,7 +33,7 @@ class AddRecordEvent extends RecordEvent {
   });
   
   @override
-  List<Object> get props => [name, details, amount, date, imagePath ?? '', forhim, onhim];
+  List<Object> get props => [name, details, amount, date,createdAt, imagePath ?? '', forhim, onhim];
 
 }
 
