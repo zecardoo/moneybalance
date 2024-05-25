@@ -137,6 +137,7 @@ class _HomePageState extends State<HomePage> {
                       }
 
                       int subDocCount = subSnapshot.data!.docs.length;
+                      final subdata = subSnapshot.data!.docs[index];
 
                       return   GestureDetector(
                         onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
@@ -152,7 +153,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                   '${data['amount']}',
+                                   '${subdata['amount']}',
                                   style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
                             
                                 ),

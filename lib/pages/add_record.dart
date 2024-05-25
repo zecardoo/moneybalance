@@ -104,7 +104,7 @@ class _AddRecordState extends State<AddRecord> {
                       _image == null ? const Text('') : clickableImage(),
                       const SizedBox(width: 10),
                       IconButton(onPressed: () => showOptions(), icon: const Icon(Icons.add_a_photo)),
-                      _DateButton(),
+                      dateButton(),
                     ],
                   ),
                   
@@ -114,9 +114,9 @@ class _AddRecordState extends State<AddRecord> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _IconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded),
+                      iconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded),
                       const SizedBox(width: 20),
-                      _IconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded),
+                      iconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded),
                     ],
                   )
                 ],
@@ -131,7 +131,7 @@ class _AddRecordState extends State<AddRecord> {
   //##################################################################################################################################
 
   // button icon
-  Widget _IconButtonForhim(String title, Color? color, IconData? icon) {
+  Widget iconButtonForhim(String title, Color? color, IconData? icon) {
     return ElevatedButton.icon(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
@@ -174,7 +174,7 @@ class _AddRecordState extends State<AddRecord> {
 
 
 
-  Widget _IconButtonOnhim(String title, Color? color, IconData? icon) {
+  Widget iconButtonOnhim(String title, Color? color, IconData? icon) {
     return ElevatedButton.icon(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
@@ -220,9 +220,9 @@ class _AddRecordState extends State<AddRecord> {
 
 
   // button that holds the result of date
-  Widget _DateButton() {
+  Widget dateButton() {
     return TextButton(
-      onPressed: () => _selectDate(),
+      onPressed: () => selectDate(),
       child: Text(
         'التاريخ : ${_dueDate.year} - ${_dueDate.month} - ${_dueDate.day}',
         style: GoogleFonts.readexPro(
@@ -239,7 +239,7 @@ class _AddRecordState extends State<AddRecord> {
 
 
   // function to set the date
-  Future<void> _selectDate() async {
+  Future<void> selectDate() async {
     final selectDate = await showDatePicker(context: context, firstDate: DateTime.now(), lastDate: DateTime(2100));
     if (selectDate != null) {
       setState(() {

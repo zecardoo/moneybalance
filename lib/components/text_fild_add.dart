@@ -31,7 +31,7 @@ class TextFormFildAdd extends StatelessWidget {
         
         // what format of data numbers only or text 
         inputFormatters: inputnumber ? <TextInputFormatter>[
-          FilteringTextInputFormatter.digitsOnly
+          FilteringTextInputFormatter.allow(RegExp(r'^(\d+)?\.?\d{0,2}'))
         ] : null,
 
         style:  GoogleFonts.readexPro(

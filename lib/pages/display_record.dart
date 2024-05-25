@@ -4,9 +4,14 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:logger/logger.dart';
+import 'package:moneybalance/bloc/record_bloc.dart';
+import 'package:moneybalance/bloc/record_event.dart';
+import 'package:moneybalance/bloc/record_state.dart';
 import 'package:moneybalance/components/data_grid_source.dart';
 import 'package:moneybalance/components/text_fild_add.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
@@ -30,6 +35,7 @@ class DisplayRecord extends StatefulWidget {
 class _DisplayRecordState extends State<DisplayRecord> {
   late RecordDataSource _recordDataSource;
   final GlobalKey<SfDataGridState> key = GlobalKey<SfDataGridState>();
+    final Logger logger = Logger();
   final detailsController = TextEditingController();
   final amountController = TextEditingController();
   late DateTime _dueDate;
@@ -37,6 +43,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
   File? _image;
   String? _imagePath;
   final picker = ImagePicker();
+  bool addrecordHided = true;
 
   @override
   void initState() {
@@ -47,7 +54,6 @@ class _DisplayRecordState extends State<DisplayRecord> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     detailsController.dispose();
     amountController.dispose();
@@ -57,76 +63,156 @@ class _DisplayRecordState extends State<DisplayRecord> {
   Widget build(BuildContext context) {
     final recordID = widget.recordID;
     return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              elevation: 0,
-              floating: true,
-              forceElevated: innerBoxIsScrolled,
-              snap: true,
-              iconTheme: const IconThemeData(color: Colors.white),
-              title: Text(
-                recordID['name'],
-                style: GoogleFonts.readexPro(
-                  textStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    
+      resizeToAvoidBottomInset: true,
+      body: BlocListener<RecordBloc, RecordState>(
+        bloc: BlocProvider.of<RecordBloc>(context),
+        listener: (BuildContext context, state) {
+          if(state is RecordSuccess){
+              // On success, pop the current screen
+      
+              // Navigator.pop(context);
+   
+            }else if(state is RecordFailure){
+              // On failure, show a snackbar with the error message
+               ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error, style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
+                  backgroundColor: Colors.red,
+                ),
+                
+              );
+            }else if(state is RecordImagePicked){
+              // When an image is picked, update the state
+              setState(() {
+                _image = state.image;
+                saveImage(_image!);
+                _imagePath = state.image.path;
+              });
+            }
+        },
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverAppBar(
+                elevation: 0,
+                floating: true,
+                forceElevated: innerBoxIsScrolled,
+                snap: true,
+                iconTheme: const IconThemeData(color: Colors.white),
+                title: Text(
+                  recordID['name'],
+                  style: GoogleFonts.readexPro(
+                    textStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      
+                    ),
                   ),
                 ),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.table_chart),
-                  onPressed: exportToExcel,
-                  tooltip: 'Excel',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.picture_as_pdf),
-                  onPressed: () {
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.table_chart),
+                    onPressed: exportToExcel,
+                    tooltip: 'Excel',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf),
+                    onPressed: () {
+                      
+                    },
                     
-                  },
-                  
-                  tooltip: 'Excel',
-                ),
-              ],
-            ),
-          ];
-        },
-        body: userData(recordID['id'])
+                    tooltip: 'Excel',
+                  ),
+                ],
+              ),
+            ];
+          },
+          body: userData(recordID['id']),
+        ),
       ),
       floatingActionButton: FloatingActionButton.small(
           onPressed: () {
             showDialog(
-              context: context,
+              context: context, 
               builder: (context) {
-                return AlertDialog(
-                  title: Text(recordID['name'], style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),textAlign: TextAlign.right,),
+                return StatefulBuilder(
+                  builder: (context, setState) {
+                    return Dialog(
 
-                  content: Column(
-                    children: [
-                      const Divider(),
-
-                      Row(children: [
-                        Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 5)),
-                        Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 5)),
-                      ]),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _image == null ? const Text('') : clickableImage(),
-                          const SizedBox(width: 10),
-                          IconButton(onPressed: () => showOptions(), icon: const Icon(Icons.add_a_photo)),
-                          _DateButton(),
-                        ],
+                      child: SafeArea(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Form(
+                                key: _formKey,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      recordID['name'], 
+                                      style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                        fontSize: 25,
+                                        fontWeight: FontWeight.w600
+                                      )),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const Divider(),
+                              Row(children: [
+                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
+                                Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
+                              ]),
+                          
+                              const SizedBox(height: 20),
+                          
+                              // display the date and image
+                          
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _image == null ? const Text('') : clickableImage(setState),
+                                  const SizedBox(width: 10),
+                                  IconButton(onPressed: () => showOptions(context, setState), icon: const Icon(Icons.add_a_photo)),
+                                  dateButton(setState),
+                                ],
+                              ),
+                          
+                              const Divider(),
+                          
+                              const SizedBox(height: 30),
+                          
+                              // display the submit button
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  iconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded, recordID['id']),
+                                  const SizedBox(width: 20),
+                                  iconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded, recordID['id']),
+                                ],
+                              ),
+                          
+                              const SizedBox(height: 30),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
+
+                    );
+                  },
                 );
               },
-            );
+            ).then((_) {
+              // Reset the form fields and image state when dialog is closed
+              setState(() {
+                amountController.clear();
+                detailsController.clear();
+                _image = null;
+                _dueDate = DateTime.now();
+              });
+            });
           },
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           // backgroundColor: Colors.blue[900],
@@ -145,13 +231,13 @@ class _DisplayRecordState extends State<DisplayRecord> {
         ),
     );
   }
-
+  // ########################## Data Gride ##########################
   Widget userData(String recordID) {
     return StreamBuilder(
       stream: FirebaseFirestore.instance
           .collection('record')
           .doc(recordID)
-          .collection('balance')
+          .collection('balance').orderBy('createdAt', descending: true) // Order by 'createdAt' in descending order
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -274,7 +360,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
       },
     );
   }
-
+  // ########################## Export Excel ##########################
   Future<void> exportToExcel() async {
     final List<DataGridRow> rows = _recordDataSource.rows;
 
@@ -319,6 +405,269 @@ class _DisplayRecordState extends State<DisplayRecord> {
 
     // Open the file
     final result = await OpenFile.open(fileName);
-    print(result.message); // Optional: handle the result
+    logger.i(result.message); // Optional: handle the result
   }
+  // ########################## Select phone or camera  ##########################
+  Future<void> showOptions(BuildContext context, StateSetter setState) async {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            child: Text('الهاتف', style: GoogleFonts.readexPro()),
+            onPressed: () {
+              //get the image Gallery
+              onPickImageGallery(setState);
+              
+              // close the options modal
+              Navigator.of(context).pop();
+
+              // get image from gallery form record_bloc
+              // context.read<RecordBloc>().add(PickImageFromGalleryEvent());
+            },
+          ),
+          CupertinoActionSheetAction(
+            child: Text('الكاميرا', style: GoogleFonts.readexPro()),
+            onPressed: () {
+              // get the image from camera
+              onPickImageCamera(setState);
+              // close the options modal
+              Navigator.of(context).pop();
+              
+              // get image from camera form record_bloc
+            //  context.read<RecordBloc>().add(PickImageFromCameraEvent());
+            
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  // ########################## Image Gallery ##########################
+  Future<void> onPickImageGallery (StateSetter setState) async{
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+        saveImage(_image!);
+        _imagePath = pickedFile.path;
+      });
+    }
+  }
+  // ########################## Image Camera ##########################
+  Future<void> onPickImageCamera (StateSetter setState) async{
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.camera);
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+          saveImage(_image!);
+          _imagePath = pickedFile.path;
+        });
+      }
+  }
+  // ########################## Click Image ##########################
+  Widget clickableImage(StateSetter setState) {
+      return GestureDetector(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InteractiveViewer(child: Image.file(_image!)),
+                    const SizedBox(height: 50),
+                    ElevatedButton(
+                      onPressed: () {
+                        deleteImage(setState);
+                      },
+                      style: const ButtonStyle(
+                        padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 90)),
+                      ),
+                      child: Text(
+                        'حذف',
+                        style: GoogleFonts.readexPro(
+                          textStyle: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+        child: Image.file(_image!, width: 30),
+      );
+    }
+  // ########################## Save Image ##########################
+  Future<void> saveImage(File image) async {
+    final directory = await getApplicationDocumentsDirectory();
+    const folderName = 'money_balance';
+    final path = '${directory.path}/$folderName/Pictures';
+    
+    // Ensure the folder exists
+    final folder = Directory(path);
+    if (!folder.existsSync()) {
+      folder.createSync(recursive: true);
+    }
+    
+    final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+    final savedImage = await image.copy('$path/$fileName.png');
+    
+    setState(() {
+      _image = savedImage;
+      _imagePath = savedImage.path;
+    });
+  }
+  // ########################## Delete image ##########################
+  Future<void> deleteImage(StateSetter setState) async {
+    if (_image != null) {     
+      try {
+        _image!.delete();
+        logger.i(_image);
+        setState(() {
+          _image = null;
+        });
+        
+       ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم حذف الصورة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
+            backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+
+          ),
+        );
+        Navigator.pop(context);
+        
+      } catch (e) {
+        logger.e(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل حذف الصورة: $e')),
+        );
+      }
+    }
+  }
+  // ########################## Data ##########################
+  Widget dateButton(StateSetter setState) {
+    return TextButton(
+      onPressed: () => _selectDate(setState),
+      child: Text(
+        'التاريخ : ${_dueDate.year} - ${_dueDate.month} - ${_dueDate.day}',
+        style: GoogleFonts.readexPro(
+          textStyle: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16.5,
+          ),
+        ),
+      ),
+    );
+  }
+  Future<void> _selectDate(StateSetter setState) async {
+    final selectDate = await showDatePicker(context: context, firstDate: DateTime.now(), lastDate: DateTime(2100));
+    if (selectDate != null) {
+      setState(() {
+        _dueDate = selectDate;
+      });
+    }
+  }
+  // ########################## Button For HIM ##########################
+  Widget iconButtonForhim(String title, Color? color, IconData? icon, String id) {
+    return ElevatedButton.icon(
+      onPressed: () {
+        if (_formKey.currentState!.validate()) {
+          context.read<RecordBloc>().add(
+            AddSubRecordEvent(
+              id:id,
+              details: detailsController.text,
+              amount: double.parse(amountController.text),
+              date: _dueDate,
+              createdAt: DateTime.now(),
+              imagePath: _imagePath,
+              forhim:double.parse(amountController.text),
+              onhim: 0
+            ),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.pop(context);
+
+          
+        }
+      },
+      icon: Icon(icon, size: 30, color: color),
+      label: Text(
+        title,
+        style: GoogleFonts.readexPro(
+          textStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+          ),
+        ),
+      ),
+      style: ButtonStyle(
+        backgroundColor: WidgetStateColor.resolveWith((states) => Colors.indigo[600]!),
+      ),
+    );
+  }
+  // ########################## Button On HIM ##########################
+  Widget iconButtonOnhim(String title, Color? color, IconData? icon, String id) {
+    return ElevatedButton.icon(
+      onPressed: () {
+        if (_formKey.currentState!.validate()) {
+         context.read<RecordBloc>().add(
+            AddSubRecordEvent(
+              id:id,
+              details: detailsController.text,
+              amount: double.parse(amountController.text),
+              date: _dueDate,
+              createdAt: DateTime.now(),
+              imagePath: _imagePath,
+              forhim:0,
+              onhim: double.parse(amountController.text)
+            ),
+          );
+         
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+
+            )
+          );
+          Navigator.pop(context);
+        }
+      },
+      icon: Icon(icon, size: 30, color: color),
+      label: Text(
+        title,
+        style: GoogleFonts.readexPro(
+          textStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+          ),
+        ),
+      ),
+      style: ButtonStyle(
+        backgroundColor: WidgetStateColor.resolveWith((states) => Colors.indigo[600]!),
+      ),
+    );
+  }
+
+
 }

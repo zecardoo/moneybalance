@@ -29,8 +29,8 @@ class RecordFailure extends RecordState {
 }
 
 // State when an image is picked
-class RecordImagePicked  extends RecordState {
-  final File image; 
+class RecordImagePicked extends RecordState {
+  final File image;
 
   const RecordImagePicked(this.image);
 

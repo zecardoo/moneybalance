@@ -14,6 +14,7 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
   // Initialize with the initial state
   RecordBloc() : super(RecordInitial()) {
     on<AddRecordEvent>(_onAddRecord); // Handle add record events
+    on<AddSubRecordEvent>(_onAddSubRecord);
     on<PickImageFromGalleryEvent>(_onPickImageGallery); // Handle pick image events
     on<PickImageFromCameraEvent>(_onPickImageCamera); // Handle pick image events
   }
@@ -27,7 +28,6 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
 
       final DocumentReference  record =  await firestore.collection('record').add({
         'name': event.name,
-        'amount': event.amount,
         'createdAt':event.createdAt,
       });
 
@@ -47,6 +47,32 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
     }
   }
 
+  Future<void> _onAddSubRecord(AddSubRecordEvent event, Emitter<RecordState> emit) async{
+    emit(RecordLoading());  // Emit loading state
+
+    try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      
+      // Get the document snapshot
+      QuerySnapshot querySnapshot = await firestore.collection('record').doc(event.id).collection('balance').orderBy('createdAt', descending: true).limit(1).get();
+
+      DocumentSnapshot lastBalanceDoc = querySnapshot.docs.first;
+
+      await firestore.collection('record').doc(event.id).collection('balance').add({
+        'amount': lastBalanceDoc.get('amount') + event.forhim - event.onhim,
+        'details': event.details,
+        'date': event.date,
+        'createdAt':event.createdAt,
+        'image': event.imagePath,
+        'forhim': event.forhim,
+        'onhim': event.onhim
+      });
+
+      emit(RecordSuccess()); // Emit success state
+    } catch (error) {
+      emit(RecordFailure(error.toString())); // Emit failure state with error message
+    }
+  }
   // Handle pick image events
   Future<void> _onPickImageGallery (PickImageFromGalleryEvent event, Emitter<RecordState> emit) async{
     final picker = ImagePicker();
@@ -61,7 +87,7 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
-      emit(RecordImagePicked(File(pickedFile.path)));  // Emit image picked state
+      emit(RecordImagePicked(File(pickedFile.path) ));  // Emit image picked state
     }
   }
 }
