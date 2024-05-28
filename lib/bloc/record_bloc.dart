@@ -28,6 +28,7 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
 
       final DocumentReference  record =  await firestore.collection('record').add({
         'name': event.name,
+        'amount': event.amount,
         'createdAt':event.createdAt,
       });
 
@@ -54,12 +55,14 @@ class RecordBloc  extends Bloc<RecordEvent, RecordState> {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       
       // Get the document snapshot
-      QuerySnapshot querySnapshot = await firestore.collection('record').doc(event.id).collection('balance').orderBy('createdAt', descending: true).limit(1).get();
+      DocumentSnapshot documentSnapshot = await firestore.collection('record').doc(event.id).get();
 
-      DocumentSnapshot lastBalanceDoc = querySnapshot.docs.first;
+      await firestore.collection('record').doc(event.id).update({
+        'amount': documentSnapshot.get('amount') + event.forhim - event.onhim,
+      });
 
       await firestore.collection('record').doc(event.id).collection('balance').add({
-        'amount': lastBalanceDoc.get('amount') + event.forhim - event.onhim,
+        'amount': documentSnapshot.get('amount') + event.forhim - event.onhim,
         'details': event.details,
         'date': event.date,
         'createdAt':event.createdAt,

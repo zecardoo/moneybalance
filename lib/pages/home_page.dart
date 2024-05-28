@@ -23,30 +23,29 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        // appBar: AppBar(
-        //   backgroundColor: Colors.blue[900],
-        // ),
-
-
-        body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                // backgroundColor: Colors.blue[900],
-                // pinned: true,
-                floating: true,
-                forceElevated: innerBoxIsScrolled,
-                snap: true,
-                // expandedHeight: 100,
-                
-                
-
-              )
-            ];
-          },
-          body:displayRecord()
-
+        appBar: AppBar(
         ),
+        
+        body: displayRecord(),
+        // body: NestedScrollView(
+        //   headerSliverBuilder: (context, innerBoxIsScrolled) {
+        //     return [
+        //       SliverAppBar(
+        //         // backgroundColor: Colors.blue[900],
+        //         pinned: true,
+        //         // floating: true,
+        //         forceElevated: innerBoxIsScrolled,
+        //         snap: true,
+        //         // expandedHeight: 100,
+                
+                
+
+        //       )
+        //     ];
+        //   },
+        //   body:displayRecord()
+
+        // ),
       
         floatingActionButton: FloatingActionButton.small(
           onPressed: () {
@@ -137,7 +136,6 @@ class _HomePageState extends State<HomePage> {
                       }
 
                       int subDocCount = subSnapshot.data!.docs.length;
-                      final subdata = subSnapshot.data!.docs[index];
 
                       return   GestureDetector(
                         onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
@@ -153,7 +151,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                   '${subdata['amount']}',
+                                   '${data['amount']}',
                                   style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
                             
                                 ),

@@ -8,12 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:moneybalance/bloc/record_bloc.dart';
 import 'package:moneybalance/bloc/record_event.dart';
 import 'package:moneybalance/bloc/record_state.dart';
 import 'package:moneybalance/components/data_grid_source.dart';
 import 'package:moneybalance/components/text_fild_add.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
@@ -63,6 +65,33 @@ class _DisplayRecordState extends State<DisplayRecord> {
   Widget build(BuildContext context) {
     final recordID = widget.recordID;
     return Scaffold(
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          recordID['name'],
+          style: GoogleFonts.readexPro(
+          textStyle: const TextStyle(
+            color: Colors.white,
+              fontWeight: FontWeight.w600,
+                    
+            ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.table_chart),
+            onPressed: exportToExcel,
+            tooltip: 'Excel',
+          ),
+          
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () {},
+                    
+          
+          ),
+        ],
+      ),
       resizeToAvoidBottomInset: true,
       body: BlocListener<RecordBloc, RecordState>(
         bloc: BlocProvider.of<RecordBloc>(context),
@@ -90,45 +119,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
               });
             }
         },
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                elevation: 0,
-                floating: true,
-                forceElevated: innerBoxIsScrolled,
-                snap: true,
-                iconTheme: const IconThemeData(color: Colors.white),
-                title: Text(
-                  recordID['name'],
-                  style: GoogleFonts.readexPro(
-                    textStyle: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      
-                    ),
-                  ),
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.table_chart),
-                    onPressed: exportToExcel,
-                    tooltip: 'Excel',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.picture_as_pdf),
-                    onPressed: () {
-                      
-                    },
-                    
-                    tooltip: 'Excel',
-                  ),
-                ],
-              ),
-            ];
-          },
-          body: userData(recordID['id']),
-        ),
+        child: userData(recordID['id']),
       ),
       floatingActionButton: FloatingActionButton.small(
           onPressed: () {
@@ -138,7 +129,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
                 return StatefulBuilder(
                   builder: (context, setState) {
                     return Dialog(
-
+                      insetPadding: const EdgeInsets.all(10),
                       child: SafeArea(
                         child: SingleChildScrollView(
                           child: Column(
@@ -237,7 +228,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
       stream: FirebaseFirestore.instance
           .collection('record')
           .doc(recordID)
-          .collection('balance').orderBy('createdAt', descending: true) // Order by 'createdAt' in descending order
+          .collection('balance').orderBy('createdAt', descending: false) // Order by 'createdAt' in descending order
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -257,13 +248,15 @@ class _DisplayRecordState extends State<DisplayRecord> {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
             child: Text(
-              'لاتوجد بيانات متاحة',
+              '',
               style: GoogleFonts.readexPro(
                 textStyle: const TextStyle(fontSize: 30),
               ),
             ),
           );
         }
+
+        //############################################
         _recordDataSource.updateData(snapshot.data!.docs);
 
         return SfDataGridTheme(
@@ -274,10 +267,37 @@ class _DisplayRecordState extends State<DisplayRecord> {
           child: SfDataGrid(
             key: key,
             source: _recordDataSource,
+            allowSwiping: true,
+            swipeMaxOffset: 100.0, 
+            endSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
+              return GestureDetector(
+                onTap: () {
+                  _recordDataSource.deleteRow(rowIndex);
+                },
+                child: Container(
+                  color: Colors.redAccent,
+                  child: const Center(
+                    child: Icon(Icons.delete, color: Colors.white,),
+                  )
+                )
+              );
+            },
+            startSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
+               return GestureDetector(
+                onTap: () {
+                  _recordDataSource.deleteRow(rowIndex);
+                },
+                child: Container(
+                  color: Colors.redAccent,
+                  child: const Center(
+                    child: Icon(Icons.delete, color: Colors.white,),
+                  )
+                )
+              );
+            },
             allowSorting: true,
             allowPullToRefresh: true,
             columnWidthMode: ColumnWidthMode.fill,
-            showColumnHeaderIconOnHover: true,
             columns: [
               GridColumn(
                 sortIconPosition: ColumnHeaderIconPosition.start,
@@ -295,6 +315,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
                 ),
               ),
               GridColumn(
+                allowSorting: false,
                 sortIconPosition: ColumnHeaderIconPosition.start,
                 columnName: 'state',
                 label: Center(
@@ -311,6 +332,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
               ),
               GridColumn(
                 sortIconPosition: ColumnHeaderIconPosition.start,
+                allowSorting: false,
                 columnName: 'details',
                 label: Center(
                   child: Text(
@@ -340,6 +362,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
                 ),
               ),
               GridColumn(
+                
                 sortIconPosition: ColumnHeaderIconPosition.start,
                 columnName: 'date',
                 label: Center(
@@ -361,52 +384,81 @@ class _DisplayRecordState extends State<DisplayRecord> {
     );
   }
   // ########################## Export Excel ##########################
-  Future<void> exportToExcel() async {
-    final List<DataGridRow> rows = _recordDataSource.rows;
+Future<void> exportToExcel() async {
+  final recordID = widget.recordID;
+  double amount = 0;
 
-    // Create a new Excel Workbook
-    final xlsio.Workbook workbook = xlsio.Workbook();
-    final xlsio.Worksheet sheet = workbook.worksheets[0];
-
-    // Add column headers
-    sheet.getRangeByName('A1').setText('الرصيد');
-    sheet.getRangeByName('B1').setText('الحالة');
-    sheet.getRangeByName('C1').setText('التفاصيل');
-    sheet.getRangeByName('D1').setText('المبلغ');
-    sheet.getRangeByName('E1').setText('التاريخ');
-
-    // Add data rows
-    for (int i = 0; i < rows.length; i++) {
-      final DataGridRow row = rows[i];
-      sheet.getRangeByIndex(i + 2, 1).setText(row.getCells()[0].value.toString());
-      sheet.getRangeByIndex(i + 2, 2).setText(row.getCells()[1].value.toString());
-      sheet.getRangeByIndex(i + 2, 3).setText(row.getCells()[2].value.toString());
-      sheet.getRangeByIndex(i + 2, 4).setText(row.getCells()[3].value.toString());
-      sheet.getRangeByIndex(i + 2, 5).setText(row.getCells()[4].value.toString());
+  // Request storage permissions
+  var status = await Permission.storage.status;
+  if (!status.isGranted) {
+    status = await Permission.storage.request();
+    if (!status.isGranted) {
+      throw Exception('Storage permission not granted');
     }
-
-    // Save the workbook
-    final List<int> bytes = workbook.saveAsStream();
-    workbook.dispose();
-
-    // Get the path to save the file
-    final directory = await getApplicationDocumentsDirectory();
-    const folderName = 'money_balance';
-    final path = '${directory.path}/$folderName/Excel';
-    
-    // Ensure the folder exists
-    final folder = Directory(path);
-    if (!folder.existsSync()) {
-      folder.createSync(recursive: true);
-    }
-    final String fileName = '$path/Records.xlsx';
-    final File file = File(fileName);
-    await file.writeAsBytes(bytes, flush: true);
-
-    // Open the file
-    final result = await OpenFile.open(fileName);
-    logger.i(result.message); // Optional: handle the result
   }
+
+  // Fetch data from Firebase
+  final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+      .collection('record')
+      .doc(recordID['id'])
+      .collection('balance')
+      .get();
+  final List<QueryDocumentSnapshot> documents = querySnapshot.docs;
+
+  // Create a new Excel Workbook
+  final xlsio.Workbook workbook = xlsio.Workbook();
+  final xlsio.Worksheet sheet = workbook.worksheets[0];
+
+  // Add column headers
+  sheet.getRangeByName('A1').setText('الرصيد');
+  sheet.getRangeByName('B1').setText('مدين');
+  sheet.getRangeByName('C1').setText('دائن');
+  sheet.getRangeByName('D1').setText('التفاصيل');
+  sheet.getRangeByName('E1').setText('التاريخ');
+
+  // Add data rows
+  for (int i = 0; i < documents.length; i++) {
+    final Map<String, dynamic> data = documents[i].data() as Map<String, dynamic>;
+    final DateTime date = data['date'].toDate();
+    final String time = DateFormat('h:mm a').format(date);
+    final String dateTime = '${date.day}-${date.month}-${date.year} \n $time';
+    amount += data['forhim'];
+    amount -= data['onhim'];
+    sheet.getRangeByIndex(i + 2, 1).setText(amount.toString());
+    sheet.getRangeByIndex(i + 2, 2).setText(data['onhim'].toString());
+    sheet.getRangeByIndex(i + 2, 3).setText(data['forhim'].toString());
+    sheet.getRangeByIndex(i + 2, 4).setText(data['details'].toString());
+    sheet.getRangeByIndex(i + 2, 5).setText(dateTime.toString());
+  }
+
+  // Save the workbook
+  final List<int> bytes = workbook.saveAsStream();
+  workbook.dispose();
+
+  // Get the path to save the file
+  final directory = await getExternalStorageDirectory();
+  const folderName = 'money_balance';
+  final path = '${directory!.path}/$folderName/Excel';
+
+  // Ensure the folder exists
+  final folder = Directory(path);
+  if (!folder.existsSync()) {
+    folder.createSync(recursive: true);
+  }
+  final String fileName = '$path/Records.xlsx';
+  final File file = File(fileName);
+  await file.writeAsBytes(bytes, flush: true);
+
+  // Open the file
+  final result = await OpenFile.open(
+    fileName,
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  );
+  if (result.type != ResultType.done) {
+    throw Exception('Failed to open the file: ${result.message}');
+  }
+}
+
   // ########################## Select phone or camera  ##########################
   Future<void> showOptions(BuildContext context, StateSetter setState) async {
     showCupertinoModalPopup(
@@ -669,5 +721,6 @@ class _DisplayRecordState extends State<DisplayRecord> {
     );
   }
 
+  
 
 }

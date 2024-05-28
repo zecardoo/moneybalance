@@ -6,11 +6,12 @@ import 'package:intl/intl.dart';
 
 class RecordDataSource extends DataGridSource {
   
+   List<DataGridRow> _records = [];
+  List<DocumentSnapshot> _documents = [];
+
   RecordDataSource({required List<DataGridRow> records}) {
     _records = records;
   }
-  List<DataGridRow> _records = [];
-
 
   @override
   List<DataGridRow> get rows => _records;
@@ -28,8 +29,14 @@ class RecordDataSource extends DataGridSource {
     ]);
   }
   // doc['amount']
-  void updateData(List<DocumentSnapshot> docs) {
-   
+  void updateData(List<DocumentSnapshot> docs) async{
+    double amount = 0;
+
+    // Sort the documents by date before processing
+    // docs.sort((a, b) => b['createdAt'].compareTo(a['createdAt']));
+  
+    
+    _documents = docs;
     _records = docs.map((doc) {
       final double money;
       final DateTime date = doc['date'].toDate();
@@ -37,11 +44,15 @@ class RecordDataSource extends DataGridSource {
 
       if(doc['forhim'] != 0){
         money = doc['forhim'];
+
       }else{
         money = doc['onhim'];
+
       }
+      amount+= doc['forhim'];
+      amount-= doc['onhim'];
       return DataGridRow(cells: [
-        DataGridCell(columnName: 'amount', value: doc['amount']),
+        DataGridCell(columnName: 'amount', value: amount),
         DataGridCell(columnName: 'state', value: doc['onhim'] < doc['forhim']),
         DataGridCell(columnName: 'details', value: doc['details']),
         DataGridCell(columnName: 'money', value: money),
@@ -54,8 +65,57 @@ class RecordDataSource extends DataGridSource {
         // Add more cells here if needed
       ]);
     }).toList();
+
     notifyListeners();
   }
-  
-  
+
+  void deleteRow(int index) async {
+  // Get the ID of the parent record document
+  String parentId = _documents[index].reference.parent.parent!.id;
+
+  // Get the ID of the balance document to be deleted
+  String balanceId = _documents[index].id;
+
+  // Get the balance document to calculate the amounts
+  DocumentSnapshot balanceDocument = await FirebaseFirestore.instance
+      .collection('record')
+      .doc(parentId)
+      .collection('balance')
+      .doc(balanceId)
+      .get();
+
+  // Get the parent record document
+  DocumentSnapshot recordDocument = await FirebaseFirestore.instance
+      .collection('record')
+      .doc(parentId)
+      .get();
+
+  // Calculate the new amount
+  double newAmount = recordDocument['amount'] - balanceDocument['forhim'] + balanceDocument['onhim'];
+
+  // Delete the balance document
+  await FirebaseFirestore.instance
+      .collection('record')
+      .doc(parentId)
+      .collection('balance')
+      .doc(balanceId)
+      .delete();
+
+  // Update the parent record document with the new amount
+  await FirebaseFirestore.instance
+      .collection('record')
+      .doc(parentId)
+      .update({
+    'amount': newAmount
+  });
+
+  // Remove the deleted document from the local lists
+  _documents.removeAt(index);
+  _records.removeAt(index);
+  notifyListeners();
 }
+
+
+}
+  
+  
