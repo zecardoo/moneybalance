@@ -45,8 +45,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
   File? _image;
   String? _imagePath;
   final picker = ImagePicker();
-  bool addrecordHided = true;
-
+  
   @override
   void initState() {
     super.initState();
@@ -228,7 +227,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
       stream: FirebaseFirestore.instance
           .collection('record')
           .doc(recordID)
-          .collection('balance').orderBy('createdAt', descending: false) // Order by 'createdAt' in descending order
+          .collection('balance') // Order by 'createdAt' in descending order
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -258,12 +257,16 @@ class _DisplayRecordState extends State<DisplayRecord> {
 
         //############################################
         _recordDataSource.updateData(snapshot.data!.docs);
-
+        // After updating _recordDataSource with new data
+        _recordDataSource.sortedColumns.add(const SortColumnDetails(name: 'date', sortDirection: DataGridSortDirection.descending));
+  
         return SfDataGridTheme(
           data: const SfDataGridThemeData(
             sortIconColor: Colors.white,
             headerColor: Color.fromARGB(255, 83, 143, 212),
           ),
+
+
           child: SfDataGrid(
             key: key,
             source: _recordDataSource,
@@ -298,7 +301,9 @@ class _DisplayRecordState extends State<DisplayRecord> {
             allowSorting: true,
             allowPullToRefresh: true,
             columnWidthMode: ColumnWidthMode.fill,
+            
             columns: [
+              
               GridColumn(
                 sortIconPosition: ColumnHeaderIconPosition.start,
                 columnName: 'amount',
@@ -364,6 +369,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
               GridColumn(
                 
                 sortIconPosition: ColumnHeaderIconPosition.start,
+                
                 columnName: 'date',
                 label: Center(
                   child: Text(
@@ -409,6 +415,14 @@ Future<void> exportToExcel() async {
   final xlsio.Workbook workbook = xlsio.Workbook();
   final xlsio.Worksheet sheet = workbook.worksheets[0];
 
+  // Add column headers and apply styling
+  final xlsio.Range headerRange = sheet.getRangeByName('A1:E1');
+  headerRange.cellStyle.backColor = '#495eb3'; // Background color
+  headerRange.cellStyle.fontColor = '#ffffff'; // Background color
+  headerRange.cellStyle.bold = true; // Bold text
+  headerRange.cellStyle.fontSize = 13; // Font size
+  headerRange.cellStyle.hAlign = xlsio.HAlignType.center;
+  headerRange.cellStyle.vAlign = xlsio.VAlignType.center;
   // Add column headers
   sheet.getRangeByName('A1').setText('الرصيد');
   sheet.getRangeByName('B1').setText('مدين');
@@ -424,6 +438,13 @@ Future<void> exportToExcel() async {
     final String dateTime = '${date.day}-${date.month}-${date.year} \n $time';
     amount += data['forhim'];
     amount -= data['onhim'];
+
+    // Apply styling to each row
+    final xlsio.Range dataRange = sheet.getRangeByIndex(i + 2, 1, i + 2, 5);
+    dataRange.cellStyle.fontSize = 10; // Font size
+    dataRange.cellStyle.hAlign = xlsio.HAlignType.center;
+    dataRange.cellStyle.vAlign = xlsio.VAlignType.center;
+    
     sheet.getRangeByIndex(i + 2, 1).setText(amount.toString());
     sheet.getRangeByIndex(i + 2, 2).setText(data['onhim'].toString());
     sheet.getRangeByIndex(i + 2, 3).setText(data['forhim'].toString());
@@ -458,7 +479,6 @@ Future<void> exportToExcel() async {
     throw Exception('Failed to open the file: ${result.message}');
   }
 }
-
   // ########################## Select phone or camera  ##########################
   Future<void> showOptions(BuildContext context, StateSetter setState) async {
     showCupertinoModalPopup(

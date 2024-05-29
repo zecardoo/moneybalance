@@ -15,8 +15,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-    late Map<String, dynamic> documentData;
-
+  
+  late Map<String, dynamic> documentData;
+  double amount = 0;
 
 
   
@@ -75,6 +76,7 @@ class _HomePageState extends State<HomePage> {
   }
   
   Widget displayRecord () {
+    
     return RefreshIndicator(
       onRefresh: refreshTable,
       child: StreamBuilder(
@@ -108,13 +110,22 @@ class _HomePageState extends State<HomePage> {
               itemBuilder: (BuildContext context, int index) {
               final data = snapshot.data!.docs[index];
                 
-              final subCollection = FirebaseFirestore.instance.collection('record').doc(data.id).collection('balance');
-               
+              final subCollection = FirebaseFirestore.instance.collection('record').doc(data.id).collection('balance').orderBy('createdAt', descending: true);
+              
               return Column(
                 children: [
                   StreamBuilder(
                     stream: subCollection.snapshots(),
                     builder: (context, subSnapshot) {
+                      
+                    // Iterate through each document in subSnapshot.data!.docs
+                    for (int i = 0; i < subSnapshot.data!.docs.length; i++) {
+                      final subData = subSnapshot.data!.docs[i];
+                      amount += subData['forhim'];
+                      amount -= subData['onhim'];
+                      print(amount);
+                    }
+                   
                       if (subSnapshot.hasError) {
                         return Center(
                           child: Text('Error: ${subSnapshot.error}'),
@@ -130,12 +141,15 @@ class _HomePageState extends State<HomePage> {
                       //   );
                       // }
 
+                      int subDocCount = 0;
                       // if no data in collection
                       if (!subSnapshot.hasData || subSnapshot.data!.docs.isEmpty) {
-                        return const Text('');
+                        
+                      }else{
+                        subDocCount = subSnapshot.data!.docs.length;
                       }
 
-                      int subDocCount = subSnapshot.data!.docs.length;
+                      
 
                       return   GestureDetector(
                         onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
@@ -144,14 +158,14 @@ class _HomePageState extends State<HomePage> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center, // Adjust as needed
                             children: [
-                              const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30,),
+                              const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30),
                                   
                               const Spacer(), // Adjust spacing as needed
                                   
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                   '${data['amount']}',
+                                   '$amount',
                                   style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
                             
                                 ),
