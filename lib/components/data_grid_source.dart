@@ -24,7 +24,7 @@ class RecordDataSource extends DataGridSource {
           alignment: Alignment.center,
           child: cell.columnName == 'state'
               ? (cell.value == true ?  const Icon(Icons.keyboard_arrow_up_sharp, color: Colors.green, size: 30,) : const Icon(Icons.keyboard_arrow_down_sharp, color: Colors.red, size: 30,)) 
-              : Text(cell.value.toString(), style: GoogleFonts.readexPro(textStyle: const TextStyle(fontWeight: FontWeight.w600, color: Color.fromARGB(255, 83, 83, 83),)),),
+              : Text(cell.value.toString(), style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 13,fontWeight: FontWeight.w600, color: Color.fromARGB(255, 83, 83, 83),)),),
         ),
     ]);
   }
@@ -33,13 +33,13 @@ class RecordDataSource extends DataGridSource {
     double amount = 0;
 
     // Sort the documents by date before processing
-    docs.sort((a, b) => b['createdAt'].compareTo(a['createdAt']));
-  
+    docs.sort((a, b) => a['createdAt'].compareTo(b['createdAt']));
+
     
     _documents = docs;
     _records = docs.map((doc) {
       final double money;
-      final DateTime date = doc['date'].toDate();
+      final DateTime date = doc['createdAt'].toDate();
       final time = DateFormat('h:mm a').format(date);
 
       if(doc['forhim'] != 0){
@@ -76,24 +76,24 @@ class RecordDataSource extends DataGridSource {
 
   // Get the ID of the balance document to be deleted
   String balanceId = _documents[index].id;
-
+  
   // Get the balance document to calculate the amounts
-  // DocumentSnapshot balanceDocument = await FirebaseFirestore.instance
-  //     .collection('record')
-  //     .doc(parentId)
-  //     .collection('balance')
-  //     .doc(balanceId)
-  //     .get();
+  DocumentSnapshot balanceDocument = await FirebaseFirestore.instance
+      .collection('record')
+      .doc(parentId)
+      .collection('balance')
+      .doc(balanceId)
+      .get();
 
   // Get the parent record document
-  // DocumentSnapshot recordDocument = await FirebaseFirestore.instance
-  //     .collection('record')
-  //     .doc(parentId)
-  //     .get();
+  DocumentSnapshot recordDocument = await FirebaseFirestore.instance
+      .collection('record')
+      .doc(parentId)
+      .get();
 
   // Calculate the new amount
-  // double newAmount = recordDocument['amount'] - balanceDocument['forhim'];
-  // newAmount = recordDocument['amount'] + (-balanceDocument['onhim']);
+  double newAmount = recordDocument['amount'] - balanceDocument['forhim'];
+  newAmount = recordDocument['amount'] + (-balanceDocument['onhim']);
   // Delete the balance document
   await FirebaseFirestore.instance
       .collection('record')
@@ -103,12 +103,12 @@ class RecordDataSource extends DataGridSource {
       .delete();
 
   // Update the parent record document with the new amount
-  // await FirebaseFirestore.instance
-  //     .collection('record')
-  //     .doc(parentId)
-  //     .update({
-  //   'amount': newAmount
-  // });
+  await FirebaseFirestore.instance
+      .collection('record')
+      .doc(parentId)
+      .update({
+    'amount': newAmount
+  });
 
   // Remove the deleted document from the local lists
   _documents.removeAt(index);

@@ -119,12 +119,12 @@ class _HomePageState extends State<HomePage> {
                     builder: (context, subSnapshot) {
                       
                     // Iterate through each document in subSnapshot.data!.docs
-                    for (int i = 0; i < subSnapshot.data!.docs.length; i++) {
-                      final subData = subSnapshot.data!.docs[i];
-                      amount += subData['forhim'];
-                      amount -= subData['onhim'];
-                      print(amount);
-                    }
+                    // for (int i = 0; i < subSnapshot.data!.docs.length; i++) {
+                    //   final subData = subSnapshot.data!.docs[i];
+                    //   amount += subData['forhim'];
+                    //   amount -= subData['onhim'];
+                    //   print(amount);
+                    // }
                    
                       if (subSnapshot.hasError) {
                         return Center(
@@ -165,7 +165,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                   '$amount',
+                                   '${data['amount']}',
                                   style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
                             
                                 ),
