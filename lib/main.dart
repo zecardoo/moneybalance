@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moneybalance/bloc/record_bloc.dart';
-import 'package:moneybalance/pages/add_record.dart';
+import 'package:moneybalance/pages/new_record.dart';
 import 'package:moneybalance/pages/display_record.dart';
 import 'package:moneybalance/pages/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';

@@ -209,7 +209,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
           child: const Icon(Icons.add, color: Colors.white,),
         ),
         
-        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
 
         // fix why show erros here 
         
@@ -221,15 +221,34 @@ class _DisplayRecordState extends State<DisplayRecord> {
         ),
     );
   }
+
+
   // ########################## Data Gride ##########################
   Widget userData(String recordID) {
+    
+    double forhim = 0;
+    double onhim = 0;
     return StreamBuilder(
       stream: FirebaseFirestore.instance
           .collection('record')
           .doc(recordID)
-          .collection('balance').orderBy('createdAt', descending: false) // Order by 'createdAt' in descending order
+          .collection('balance').orderBy('createdAt', descending: true) // Order by 'createdAt' in descending order
           .snapshots(),
       builder: (context, snapshot) {
+        final subdata = snapshot.data?.docs.length ?? 0;
+        forhim = 0;
+        onhim = 0;
+        for (int i = 0; i < subdata; i++) {
+          final DocumentSnapshot? doc = snapshot.data?.docs[i];
+          final Map<String, dynamic>? data = doc?.data() as Map<String, dynamic>?;
+          if (data != null) {
+           
+            forhim += data['forhim'] ?? 0;
+            onhim += data['onhim'] ?? 0;
+          }
+        }
+        
+        // logger.i('--------- $forhim ----------- $onhim ---------');
         if (snapshot.hasError) {
           return Center(
             child: Text('Error: ${snapshot.error}'),
@@ -258,8 +277,8 @@ class _DisplayRecordState extends State<DisplayRecord> {
         //############################################
         _recordDataSource.updateData(snapshot.data!.docs);
         // After updating _recordDataSource with new data
-        _recordDataSource.sortedColumns.add(const SortColumnDetails(name: 'date', sortDirection: DataGridSortDirection.descending));
-  
+        // _recordDataSource.sortedColumns.add(const SortColumnDetails(name: 'date', sortDirection: DataGridSortDirection.descending));
+      
         return SfDataGridTheme(
           data: const SfDataGridThemeData(
             sortIconColor: Colors.white,
@@ -270,12 +289,15 @@ class _DisplayRecordState extends State<DisplayRecord> {
           child: SfDataGrid(
             key: key,
             source: _recordDataSource,
+            allowSorting: true,
+            allowPullToRefresh: true,
+            columnWidthMode: ColumnWidthMode.fill,
+            //swip
             allowSwiping: true,
-            swipeMaxOffset: 100.0, 
+            swipeMaxOffset: 100,
             endSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
               return GestureDetector(
                 onTap: () {
-                  _recordDataSource.sortedColumns.add(const SortColumnDetails(name: 'date', sortDirection: DataGridSortDirection.ascending));
                   _recordDataSource.deleteRow(rowIndex);
                 },
                 child: Container(
@@ -299,12 +321,42 @@ class _DisplayRecordState extends State<DisplayRecord> {
                 )
               );
             },
-            allowSorting: true,
-            allowPullToRefresh: true,
-            columnWidthMode: ColumnWidthMode.fill,
-            
-            columns: [
+            allowTriStateSorting: true,
+            footerFrozenRowsCount: 1,
+            footerHeight: 30,
+            footer: Container(
+              color: Colors.indigo[500],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  
+                  Text(
+                    'مدين: $onhim',
+                    
+                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )),
+                  ),
+
+                  const SizedBox(width: 120),
+
+                  Text(
+                    'دائن: $forhim',
+                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )),
+                  ),
+
+                  
+                ],
+              ),
               
+            ),
+            columns: [
               GridColumn(
                 sortIconPosition: ColumnHeaderIconPosition.start,
                 columnName: 'amount',
@@ -391,112 +443,112 @@ class _DisplayRecordState extends State<DisplayRecord> {
     );
   }
   // ########################## Export Excel ##########################
-Future<void> exportToExcel() async {
-  final recordID = widget.recordID;
-  double amount = 0;
+  Future<void> exportToExcel() async {
+    final recordID = widget.recordID;
+    double amount = 0;
 
-  // Request storage permissions
-  if (await _requestStoragePermission()) {
-    try {
-      // Fetch data from Firebase
-      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('record')
-          .doc(recordID['id'])
-          .collection('balance')
-          .get();
-      final List<QueryDocumentSnapshot> documents = querySnapshot.docs;
+    // Request storage permissions
+    if (await _requestStoragePermission()) {
+      try {
+        // Fetch data from Firebase
+        final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('record')
+            .doc(recordID['id'])
+            .collection('balance').orderBy('createdAt', descending: true)
+            .get();
+        final List<QueryDocumentSnapshot> documents = querySnapshot.docs;
 
-      // Create a new Excel Workbook
-      final xlsio.Workbook workbook = xlsio.Workbook();
-      final xlsio.Worksheet sheet = workbook.worksheets[0];
+        // Create a new Excel Workbook
+        final xlsio.Workbook workbook = xlsio.Workbook();
+        final xlsio.Worksheet sheet = workbook.worksheets[0];
 
-      // Add column headers and apply styling
-      final xlsio.Range headerRange = sheet.getRangeByName('A1:E1');
-      headerRange.cellStyle.backColor = '#495eb3'; // Background color
-      headerRange.cellStyle.fontColor = '#ffffff'; // Font color
-      headerRange.cellStyle.bold = true; // Bold text
-      headerRange.cellStyle.fontSize = 13; // Font size
-      headerRange.cellStyle.hAlign = xlsio.HAlignType.center;
-      headerRange.cellStyle.vAlign = xlsio.VAlignType.center;
+        // Add column headers and apply styling
+        final xlsio.Range headerRange = sheet.getRangeByName('A1:E1');
+        headerRange.cellStyle.backColor = '#495eb3'; // Background color
+        headerRange.cellStyle.fontColor = '#ffffff'; // Font color
+        headerRange.cellStyle.bold = true; // Bold text
+        headerRange.cellStyle.fontSize = 13; // Font size
+        headerRange.cellStyle.hAlign = xlsio.HAlignType.center;
+        headerRange.cellStyle.vAlign = xlsio.VAlignType.center;
 
-      // Add column headers
-      sheet.getRangeByName('A1').setText('الرصيد');
-      sheet.getRangeByName('B1').setText('مدين');
-      sheet.getRangeByName('C1').setText('دائن');
-      sheet.getRangeByName('D1').setText('التفاصيل');
-      sheet.getRangeByName('E1').setText('التاريخ');
+        // Add column headers
+        sheet.getRangeByName('A1').setText('الرصيد');
+        sheet.getRangeByName('B1').setText('مدين');
+        sheet.getRangeByName('C1').setText('دائن');
+        sheet.getRangeByName('D1').setText('التفاصيل');
+        sheet.getRangeByName('E1').setText('التاريخ');
 
-      // Add data rows
-      for (int i = 0; i < documents.length; i++) {
-        final Map<String, dynamic> data = documents[i].data() as Map<String, dynamic>;
-        final DateTime date = data['date'].toDate();
-        final String time = DateFormat('h:mm a').format(date);
-        final String dateTime = '${date.day}-${date.month}-${date.year} \n $time';
-        amount += data['forhim'];
-        amount -= data['onhim'];
+        // Add data rows
+        for (int i = 0; i < documents.length; i++) {
+          final Map<String, dynamic> data = documents[i].data() as Map<String, dynamic>;
+          final DateTime date = data['date'].toDate();
+          final String time = DateFormat('h:mm a').format(date);
+          final String dateTime = '${date.day}-${date.month}-${date.year} \n $time';
+          amount += data['forhim'];
+          amount -= data['onhim'];
 
-        // Apply styling to each row
-        final xlsio.Range dataRange = sheet.getRangeByIndex(i + 2, 1, i + 2, 5);
-        dataRange.cellStyle.fontSize = 10; // Font size
-        dataRange.cellStyle.hAlign = xlsio.HAlignType.center;
-        dataRange.cellStyle.vAlign = xlsio.VAlignType.center;
-        
-        sheet.getRangeByIndex(i + 2, 1).setText(amount.toString());
-        sheet.getRangeByIndex(i + 2, 2).setText(data['onhim'].toString());
-        sheet.getRangeByIndex(i + 2, 3).setText(data['forhim'].toString());
-        sheet.getRangeByIndex(i + 2, 4).setText(data['details'].toString());
-        sheet.getRangeByIndex(i + 2, 5).setText(dateTime.toString());
+          // Apply styling to each row
+          final xlsio.Range dataRange = sheet.getRangeByIndex(i + 2, 1, i + 2, 5);
+          dataRange.cellStyle.fontSize = 10; // Font size
+          dataRange.cellStyle.hAlign = xlsio.HAlignType.center;
+          dataRange.cellStyle.vAlign = xlsio.VAlignType.center;
+          
+          sheet.getRangeByIndex(i + 2, 1).setText(amount.toString());
+          sheet.getRangeByIndex(i + 2, 2).setText(data['onhim'].toString());
+          sheet.getRangeByIndex(i + 2, 3).setText(data['forhim'].toString());
+          sheet.getRangeByIndex(i + 2, 4).setText(data['details'].toString());
+          sheet.getRangeByIndex(i + 2, 5).setText(dateTime.toString());
+        }
+
+        // Save the workbook
+        final List<int> bytes = workbook.saveAsStream();
+        workbook.dispose();
+
+        // Get the path to save the file
+        final directory = await getExternalStorageDirectory();
+        const folderName = 'money_balance';
+        final path = '${directory!.path}/$folderName/Excel';
+
+        // Ensure the folder exists
+        final folder = Directory(path);
+        if (!folder.existsSync()) {
+          folder.createSync(recursive: true);
+        }
+        final String fileName = '$path/Records.xlsx';
+        final File file = File(fileName);
+        await file.writeAsBytes(bytes, flush: true);
+
+        // Open the file
+        final result = await OpenFile.open(
+          fileName,
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        if (result.type != ResultType.done) {
+          throw Exception('Failed to open the file: ${result.message}');
+        }
+      } catch (e) {
+        logger.e('Error exporting to Excel: $e');
+        rethrow;
       }
-
-      // Save the workbook
-      final List<int> bytes = workbook.saveAsStream();
-      workbook.dispose();
-
-      // Get the path to save the file
-      final directory = await getExternalStorageDirectory();
-      const folderName = 'money_balance';
-      final path = '${directory!.path}/$folderName/Excel';
-
-      // Ensure the folder exists
-      final folder = Directory(path);
-      if (!folder.existsSync()) {
-        folder.createSync(recursive: true);
-      }
-      final String fileName = '$path/Records.xlsx';
-      final File file = File(fileName);
-      await file.writeAsBytes(bytes, flush: true);
-
-      // Open the file
-      final result = await OpenFile.open(
-        fileName,
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      );
-      if (result.type != ResultType.done) {
-        throw Exception('Failed to open the file: ${result.message}');
-      }
-    } catch (e) {
-      logger.e('Error exporting to Excel: $e');
-      rethrow;
+    } else {
+      throw Exception('Storage permission not granted');
     }
-  } else {
-    throw Exception('Storage permission not granted');
-  }
-}
-
-Future<bool> _requestStoragePermission() async {
-  // Check storage permission
-  if (await Permission.storage.request().isGranted) {
-    return true;
   }
 
-  // For Android 11 and above, MANAGE_EXTERNAL_STORAGE is required for broad access
-  if (await Permission.manageExternalStorage.request().isGranted) {
-    return true;
-  }
+  Future<bool> _requestStoragePermission() async {
+    // Check storage permission
+    if (await Permission.storage.request().isGranted) {
+      return true;
+    }
 
-  // Permission not granted
-  return false;
-}
+    // For Android 11 and above, MANAGE_EXTERNAL_STORAGE is required for broad access
+    if (await Permission.manageExternalStorage.request().isGranted) {
+      return true;
+    }
+
+    // Permission not granted
+    return false;
+  }
   // ########################## Select phone or camera  ##########################
   Future<void> showOptions(BuildContext context, StateSetter setState) async {
     showCupertinoModalPopup(
@@ -758,7 +810,5 @@ Future<bool> _requestStoragePermission() async {
       ),
     );
   }
-
-  
 
 }

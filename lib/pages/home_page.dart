@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:logger/logger.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   
   late Map<String, dynamic> documentData;
   double amount = 0;
-
+  Logger logger = Logger();
 
   
   @override
@@ -76,7 +77,8 @@ class _HomePageState extends State<HomePage> {
   }
   
   Widget displayRecord () {
-    
+    double forhim = 0;
+    double onhim = 0;
     return RefreshIndicator(
       onRefresh: refreshTable,
       child: StreamBuilder(
@@ -117,15 +119,22 @@ class _HomePageState extends State<HomePage> {
                   StreamBuilder(
                     stream: subCollection.snapshots(),
                     builder: (context, subSnapshot) {
-                      
-                    // Iterate through each document in subSnapshot.data!.docs
-                    // for (int i = 0; i < subSnapshot.data!.docs.length; i++) {
-                    //   final subData = subSnapshot.data!.docs[i];
-                    //   amount += subData['forhim'];
-                    //   amount -= subData['onhim'];
-                    //   print(amount);
-                    // }
-                   
+                      final subdata = snapshot.data?.docs.length ?? 0;
+
+                      forhim = 0;
+                      onhim = 0;
+                      // Iterate through each document in subSnapshot.data!.docs
+                      for (int i = 0; i < subdata; i++) {
+                        final DocumentSnapshot? doc = subSnapshot.data?.docs[i];
+                        final Map<String, dynamic>? subData = doc?.data() as Map<String, dynamic>?;
+                        if (subData != null) {
+           
+                          forhim += subData['forhim'];
+                          onhim += subData['onhim'];
+                        }
+                      }
+                      // logger.i('--------- $forhim ------------ $onhim');
+                    
                       if (subSnapshot.hasError) {
                         return Center(
                           child: Text('Error: ${subSnapshot.error}'),
@@ -152,13 +161,13 @@ class _HomePageState extends State<HomePage> {
                       
 
                       return   GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
+                        onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id, 'amount': data['amount'], 'state': forhim > onhim }),
                         child: Padding(
                           padding: const EdgeInsets.all(0),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center, // Adjust as needed
                             children: [
-                              const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30),
+                              forhim > onhim ? const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30) : const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.red, size: 30),
                                   
                               const Spacer(), // Adjust spacing as needed
                                   
