@@ -119,18 +119,21 @@ class _HomePageState extends State<HomePage> {
                   StreamBuilder(
                     stream: subCollection.snapshots(),
                     builder: (context, subSnapshot) {
-                      final subdata = snapshot.data?.docs.length ?? 0;
+                       if (subSnapshot.connectionState == ConnectionState.waiting) {
+                          return CircularProgressIndicator(); // Placeholder widget while waiting for data
+                        }
+                      final subDocs = subSnapshot.data!.docs;
 
                       forhim = 0;
                       onhim = 0;
                       // Iterate through each document in subSnapshot.data!.docs
-                      for (int i = 0; i < subdata; i++) {
+                      for (int i = 0; i < subDocs.length; i++) {
                         final DocumentSnapshot? doc = subSnapshot.data?.docs[i];
                         final Map<String, dynamic>? subData = doc?.data() as Map<String, dynamic>?;
                         if (subData != null) {
            
-                          forhim += subData['forhim'];
-                          onhim += subData['onhim'];
+                          forhim += subData['forhim'] ?? 0;
+                          onhim += subData['onhim'] ?? 0;
                         }
                       }
                       // logger.i('--------- $forhim ------------ $onhim');
@@ -161,7 +164,7 @@ class _HomePageState extends State<HomePage> {
                       
 
                       return   GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id, 'amount': data['amount'], 'state': forhim > onhim }),
+                        onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
                         child: Padding(
                           padding: const EdgeInsets.all(0),
                           child: Row(

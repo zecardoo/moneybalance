@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -13,11 +12,9 @@ import 'package:logger/logger.dart';
 import 'package:moneybalance/bloc/record_bloc.dart';
 import 'package:moneybalance/bloc/record_event.dart';
 import 'package:moneybalance/bloc/record_state.dart';
-import 'package:moneybalance/components/data_grid_source.dart';
+import 'package:moneybalance/components/table_accounting.dart';
 import 'package:moneybalance/components/text_fild_add.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
@@ -35,8 +32,6 @@ class DisplayRecord extends StatefulWidget {
 }
 
 class _DisplayRecordState extends State<DisplayRecord> {
-  late RecordDataSource _recordDataSource;
-  final GlobalKey<SfDataGridState> key = GlobalKey<SfDataGridState>();
     final Logger logger = Logger();
   final detailsController = TextEditingController();
   final amountController = TextEditingController();
@@ -45,11 +40,13 @@ class _DisplayRecordState extends State<DisplayRecord> {
   File? _image;
   String? _imagePath;
   final picker = ImagePicker();
-  
+  double forhim = 0;
+  double onhim = 0;
+  double totalamount = 0;  
+
   @override
   void initState() {
     super.initState();
-    _recordDataSource = RecordDataSource(records: []);
     _dueDate = DateTime.now();
   }
 
@@ -59,10 +56,12 @@ class _DisplayRecordState extends State<DisplayRecord> {
     detailsController.dispose();
     amountController.dispose();
   }
+  
 
   @override
   Widget build(BuildContext context) {
     final recordID = widget.recordID;
+    
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
@@ -77,6 +76,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
           ),
         ),
         actions: [
+          
           IconButton(
             icon: const Icon(Icons.table_chart),
             onPressed: exportToExcel,
@@ -96,113 +96,30 @@ class _DisplayRecordState extends State<DisplayRecord> {
         bloc: BlocProvider.of<RecordBloc>(context),
         listener: (BuildContext context, state) {
           if(state is RecordSuccess){
-              // On success, pop the current screen
-      
-              // Navigator.pop(context);
-   
-            }else if(state is RecordFailure){
-              // On failure, show a snackbar with the error message
-               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error, style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
-                  backgroundColor: Colors.red,
-                ),
-                
-              );
-            }else if(state is RecordImagePicked){
-              // When an image is picked, update the state
-              setState(() {
-                _image = state.image;
-                saveImage(_image!);
-                _imagePath = state.image.path;
-              });
-            }
+            // On success, pop the current screen
+         
+          }else if(state is RecordFailure){
+            // On failure, show a snackbar with the error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.error, style: GoogleFonts.readexPro(), textAlign: TextAlign.right,), 
+                backgroundColor: Colors.red,
+              ),    
+            );
+          }else if(state is RecordImagePicked){
+            // When an image is picked, update the state
+            setState(() {
+              _image = state.image;
+              saveImage(_image!);
+              _imagePath = state.image.path;
+            });
+          }
         },
-        child: userData(recordID['id']),
+        child:TableAccounting(recordID: recordID['id']),
       ),
       floatingActionButton: FloatingActionButton.small(
           onPressed: () {
-            showDialog(
-              context: context, 
-              builder: (context) {
-                return StatefulBuilder(
-                  builder: (context, setState) {
-                    return Dialog(
-                      insetPadding: const EdgeInsets.all(10),
-                      child: SafeArea(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Form(
-                                key: _formKey,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                  child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      recordID['name'], 
-                                      style: GoogleFonts.readexPro(textStyle: const TextStyle(
-                                        fontSize: 25,
-                                        fontWeight: FontWeight.w600
-                                      )),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const Divider(),
-                              Row(children: [
-                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
-                                Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
-                              ]),
-                          
-                              const SizedBox(height: 20),
-                          
-                              // display the date and image
-                          
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _image == null ? const Text('') : clickableImage(setState),
-                                  const SizedBox(width: 10),
-                                  IconButton(onPressed: () => showOptions(context, setState), icon: const Icon(Icons.add_a_photo)),
-                                  dateButton(setState),
-                                ],
-                              ),
-                          
-                              const Divider(),
-                          
-                              const SizedBox(height: 30),
-                          
-                              // display the submit button
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  iconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded, recordID['id']),
-                                  const SizedBox(width: 20),
-                                  iconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded, recordID['id']),
-                                ],
-                              ),
-                          
-                              const SizedBox(height: 30),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                    );
-                  },
-                );
-              },
-            ).then((_) {
-              // Reset the form fields and image state when dialog is closed
-              setState(() {
-                amountController.clear();
-                detailsController.clear();
-                _image = null;
-                _dueDate = DateTime.now();
-              });
-            });
+            addNewRecord(recordID);
           },
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           // backgroundColor: Colors.blue[900],
@@ -213,234 +130,148 @@ class _DisplayRecordState extends State<DisplayRecord> {
 
         // fix why show erros here 
         
-        bottomNavigationBar: const BottomAppBar(
-          shape: CircularNotchedRectangle(),
-          // notchMargin: 5,
+        bottomNavigationBar:BottomAppBar(
+
+          shape: const CircularNotchedRectangle(),
+          // notchMargin: 1,
           // color: Colors.blue[900],
           height: 50,
-        ),
+
+          child:StreamBuilder(
+            stream: FirebaseFirestore.instance
+                .collection('record')
+                .doc(recordID['id'])
+                .collection('balance') // Assuming you have a subcollection
+                .snapshots(),
+            builder: (context, snapshot) {
+            
+
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator(); // Placeholder widget while waiting for data
+              }
+            
+              final subDocs = snapshot.data!.docs;
+
+              forhim = 0;
+              onhim = 0;
+              totalamount = 0;
+              // Iterate through each document in subSnapshot.data!.docs
+              for (int i = 0; i < subDocs.length; i++) {
+                final DocumentSnapshot? doc = snapshot.data?.docs[i];
+                final Map<String, dynamic>? subData = doc?.data() as Map<String, dynamic>?;
+                if (subData != null) {
+            
+                  forhim += subData['forhim'] ?? 0;
+                  onhim += subData['onhim'] ?? 0;
+                }
+              }
+              totalamount = forhim - onhim;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  forhim > onhim ? Text(' دائن :  $totalamount', style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white,)))
+                  : Text('مدين: $totalamount', style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white,))),
+              
+                ],
+              );
+            }
+            
+        )
+      )
     );
   }
 
 
   // ########################## Data Gride ##########################
-  Widget userData(String recordID) {
+  Future<void> addNewRecord(recordID) {
+    return showDialog(
+      context: context, 
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.all(10),
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                      children: 
+                      [
+                        Form(
+                          key: _formKey,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                recordID['name'], 
+                                style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.w600
+                                )),
+                              ),
+                              
+                            ),
+                          ),
+                        ),
+                        const Divider(),
+                        
+                        Row(children: [
+                          Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
+                          Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
+                        ]),
+                        
+                        const SizedBox(height: 20),
+                          
+                        // display the date and image
+                          
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _image == null ? const Text('') : clickableImage(setState),
+                            const SizedBox(width: 10),
+                            IconButton(onPressed: () => showOptions(context, setState), icon: const Icon(Icons.add_a_photo)),
+                            dateButton(setState),
+                          ],
+                        ),
+                          
+                        const Divider(),
+                          
+                        const SizedBox(height: 30),
+                          
+                        // display the submit button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            iconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded, recordID['id']),
+                            const SizedBox(width: 20),
+                            iconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded, recordID['id']),
+                          ],
+                        ),
+                          
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
+                ),
+
+              );
+            },
+          );
+        },
+    ).then((_) {
+      // Reset the form fields and image state when dialog is closed
+      setState(() {
+        amountController.clear();
+        detailsController.clear();
+        _image = null;
+        _dueDate = DateTime.now();
+      });
+    }); 
     
-    double forhim = 0;
-    double onhim = 0;
-    return StreamBuilder(
-      stream: FirebaseFirestore.instance
-          .collection('record')
-          .doc(recordID)
-          .collection('balance').orderBy('createdAt', descending: true) // Order by 'createdAt' in descending order
-          .snapshots(),
-      builder: (context, snapshot) {
-        final subdata = snapshot.data?.docs.length ?? 0;
-        forhim = 0;
-        onhim = 0;
-        for (int i = 0; i < subdata; i++) {
-          final DocumentSnapshot? doc = snapshot.data?.docs[i];
-          final Map<String, dynamic>? data = doc?.data() as Map<String, dynamic>?;
-          if (data != null) {
-           
-            forhim += data['forhim'] ?? 0;
-            onhim += data['onhim'] ?? 0;
-          }
-        }
-        
-        // logger.i('--------- $forhim ----------- $onhim ---------');
-        if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: SpinKitFadingCircle(
-              color: Colors.indigo[700],
-            ),
-          );
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Text(
-              '',
-              style: GoogleFonts.readexPro(
-                textStyle: const TextStyle(fontSize: 30),
-              ),
-            ),
-          );
-        }
-
-        //############################################
-        _recordDataSource.updateData(snapshot.data!.docs);
-        // After updating _recordDataSource with new data
-        // _recordDataSource.sortedColumns.add(const SortColumnDetails(name: 'date', sortDirection: DataGridSortDirection.descending));
-      
-        return SfDataGridTheme(
-          data: const SfDataGridThemeData(
-            sortIconColor: Colors.white,
-            headerColor: Color.fromARGB(255, 83, 143, 212),
-          ),
-
-
-          child: SfDataGrid(
-            key: key,
-            source: _recordDataSource,
-            allowSorting: true,
-            allowPullToRefresh: true,
-            columnWidthMode: ColumnWidthMode.fill,
-            //swip
-            allowSwiping: true,
-            swipeMaxOffset: 100,
-            endSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
-              return GestureDetector(
-                onTap: () {
-                  _recordDataSource.deleteRow(rowIndex);
-                },
-                child: Container(
-                  color: Colors.redAccent,
-                  child: const Center(
-                    child: Icon(Icons.delete, color: Colors.white,),
-                  )
-                )
-              );
-            },
-            startSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
-               return GestureDetector(
-                onTap: () {
-                  _recordDataSource.deleteRow(rowIndex);
-                },
-                child: Container(
-                  color: Colors.redAccent,
-                  child: const Center(
-                    child: Icon(Icons.delete, color: Colors.white,),
-                  )
-                )
-              );
-            },
-            allowTriStateSorting: true,
-            footerFrozenRowsCount: 1,
-            footerHeight: 30,
-            footer: Container(
-              color: Colors.indigo[500],
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  
-                  Text(
-                    'مدين: $onhim',
-                    
-                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    )),
-                  ),
-
-                  const SizedBox(width: 120),
-
-                  Text(
-                    'دائن: $forhim',
-                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    )),
-                  ),
-
-                  
-                ],
-              ),
-              
-            ),
-            columns: [
-              GridColumn(
-                sortIconPosition: ColumnHeaderIconPosition.start,
-                columnName: 'amount',
-                label: Center(
-                  child: Text(
-                    'الرصيد',
-                    style: GoogleFonts.readexPro(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              GridColumn(
-                allowSorting: false,
-                sortIconPosition: ColumnHeaderIconPosition.start,
-                columnName: 'state',
-                label: Center(
-                  child: Text(
-                    'الحالة',
-                    style: GoogleFonts.readexPro(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              GridColumn(
-                sortIconPosition: ColumnHeaderIconPosition.start,
-                allowSorting: false,
-                columnName: 'details',
-                label: Center(
-                  child: Text(
-                    'التفاصيل',
-                    style: GoogleFonts.readexPro(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              GridColumn(
-                sortIconPosition: ColumnHeaderIconPosition.start,
-                columnName: 'money',
-                label: Center(
-                  child: Text(
-                    'المبلغ',
-                    style: GoogleFonts.readexPro(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              GridColumn(
-                
-                sortIconPosition: ColumnHeaderIconPosition.start,
-                
-                columnName: 'date',
-                label: Center(
-                  child: Text(
-                    'التاريخ',
-                    style: GoogleFonts.readexPro(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
   // ########################## Export Excel ##########################
   Future<void> exportToExcel() async {
