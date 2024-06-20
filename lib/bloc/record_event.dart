@@ -38,7 +38,7 @@ class AddRecordEvent extends RecordEvent {
 }
 
 class AddSubRecordEvent extends RecordEvent {
-  final String id;
+  final String? id;
   final String details;
   final double amount;
   final DateTime date;
@@ -59,7 +59,7 @@ class AddSubRecordEvent extends RecordEvent {
   });
   
   @override
-  List<Object> get props => [id, details, amount, date,createdAt, imagePath ?? '', forhim, onhim];
+  List<Object> get props => [id ?? '', details, amount, date,createdAt, imagePath ?? '', forhim, onhim];
 
 }
 

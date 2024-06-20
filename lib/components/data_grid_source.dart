@@ -23,7 +23,7 @@ class RecordDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     return DataGridRowAdapter(cells: [
       for (var cell in row.getCells())
-        if (cell.columnName != 'sum') // Check if column name is not 'id'
+        if (cell.columnName != 'documentId') // Check if column name is not 'id'
         Container(
           alignment: Alignment.center,
           child: cell.columnName == 'state'
@@ -53,20 +53,14 @@ class RecordDataSource extends DataGridSource {
         DataGridCell(columnName: 'details', value: doc['details']),
         DataGridCell(columnName: 'money', value: money),
         DataGridCell(columnName: 'date', value: '${date.day}-${date.month}-${date.year} \n $time'),
-        DataGridCell(columnName: 'sum', value: amount),
+        DataGridCell(columnName: 'documentId', value: doc.id),
       ]);
     }).toList();
     notifyListeners();
   }
   // delete data
-  void deleteRow(int index) async {
+  Future<void> deleteRow(int index) async {
   try {
-    // Check if the index is valid
-    if (index < 0 || index >= _documents.length) {
-      logger.i('Error: Index $index is out of range');
-      return;
-    }
-
     // Get the ID of the parent record document
     String parentId = _documents[index].reference.parent.parent!.id;
 
@@ -120,11 +114,11 @@ class RecordDataSource extends DataGridSource {
 
     notifyListeners();
   } catch (e) {
-    logger.e('Error deleting row: $e');
+    logger.e(e);
   }
 }
   // Recalculate amounts for all documents in the collection
-  void recalculateAmounts(String parentId) async {
+  Future<void> recalculateAmounts(String parentId) async {
     double amount = 0;
     CollectionReference collectionRef = FirebaseFirestore.instance
         .collection('record')
@@ -138,6 +132,40 @@ class RecordDataSource extends DataGridSource {
       await collectionRef.doc(doc.id).update({'amount': amount});
     }
   }
+
+  Future<void> updateRow (int index) async{
+    try {
+      String parentId = _documents[index].reference.parent.parent!.id;
+      String balanceId = _documents[index].id;
+      
+      //first call the main colloection 
+      DocumentSnapshot recordDocument = await FirebaseFirestore.instance
+        .collection('record')
+        .doc(parentId)
+        .get();
+
+      DocumentSnapshot balanceDocument = await FirebaseFirestore.instance
+        .collection('record')
+        .doc(parentId)
+        .collection('balance')
+        .doc(balanceId)
+        .get();
+
+      // Calculate the new amount
+      double newAmount = recordDocument['amount'];
+      if (balanceDocument['forhim'] != 0) {
+        newAmount -= balanceDocument['forhim'];
+      } else {
+        newAmount += balanceDocument['onhim'];
+      }
+
+     
+    } catch (e) {
+      logger.e(e);
+    }
+  }
+
+
 }
 
  

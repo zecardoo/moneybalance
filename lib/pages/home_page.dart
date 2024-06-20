@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:badges/badges.dart' as badges;
 import 'package:logger/logger.dart';
 
 class HomePage extends StatefulWidget {
@@ -120,7 +119,7 @@ class _HomePageState extends State<HomePage> {
                     stream: subCollection.snapshots(),
                     builder: (context, subSnapshot) {
                        if (subSnapshot.connectionState == ConnectionState.waiting) {
-                          return CircularProgressIndicator(); // Placeholder widget while waiting for data
+                          return const CircularProgressIndicator(); // Placeholder widget while waiting for data
                         }
                       final subDocs = subSnapshot.data!.docs;
 
@@ -178,21 +177,30 @@ class _HomePageState extends State<HomePage> {
                                 flex: 2,
                                 child: Text(
                                    '${data['amount']}',
-                                  style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[700])),
+                                  style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700])),
                             
                                 ),
                               ),
                                 
                               const Spacer(), // Adjust spacing as needed
-                                    
-                              badges.Badge(
-                                badgeContent: Text(
+
+                              Container(
+                                margin: const EdgeInsets.all(10),
+                                width: 30,
+                                height: 30,
+                                decoration: const BoxDecoration(
+                                  color: Colors.blueAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
                                   '$subDocCount',
                                   style: GoogleFonts.readexPro(textStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
                                 ),
-                                badgeStyle: const badges.BadgeStyle(badgeColor: Colors.blueAccent),
-                              ),
-                                
+                                ),
+                              ), 
+                            
+                              
                               const Spacer(), // Adjust spacing as needed
                               Expanded(
                                 flex: 3,

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -12,9 +13,11 @@ import 'package:logger/logger.dart';
 import 'package:moneybalance/bloc/record_bloc.dart';
 import 'package:moneybalance/bloc/record_event.dart';
 import 'package:moneybalance/bloc/record_state.dart';
-import 'package:moneybalance/components/table_accounting.dart';
+import 'package:moneybalance/components/data_grid_source.dart';
 import 'package:moneybalance/components/text_fild_add.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:syncfusion_flutter_core/theme.dart';
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
@@ -32,7 +35,7 @@ class DisplayRecord extends StatefulWidget {
 }
 
 class _DisplayRecordState extends State<DisplayRecord> {
-    final Logger logger = Logger();
+  final Logger logger = Logger();
   final detailsController = TextEditingController();
   final amountController = TextEditingController();
   late DateTime _dueDate;
@@ -43,11 +46,15 @@ class _DisplayRecordState extends State<DisplayRecord> {
   double forhim = 0;
   double onhim = 0;
   double totalamount = 0;  
+  late RecordDataSource _recordDataSource;
+  final GlobalKey<SfDataGridState> key = GlobalKey<SfDataGridState>();
 
   @override
   void initState() {
     super.initState();
     _dueDate = DateTime.now();
+    _recordDataSource = RecordDataSource(records: []);
+
   }
 
   @override
@@ -115,7 +122,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
             });
           }
         },
-        child:TableAccounting(recordID: recordID['id']),
+        child:tableAccounting(recordID['id']),
       ),
       floatingActionButton: FloatingActionButton.small(
           onPressed: () {
@@ -183,9 +190,231 @@ class _DisplayRecordState extends State<DisplayRecord> {
       )
     );
   }
-
-
   // ########################## Data Gride ##########################
+  Widget tableAccounting(recordID) {
+   double forhim = 0;
+    double onhim = 0;
+    return StreamBuilder(
+      stream: FirebaseFirestore.instance
+          .collection('record')
+          .doc(recordID)
+          .collection('balance').orderBy('createdAt', descending: true) // Order by 'createdAt' in descending order
+          .snapshots(),
+      builder: (context, snapshot) {
+        final subdata = snapshot.data?.docs.length ?? 0;
+        forhim = 0;
+        onhim = 0;
+        for (int i = 0; i < subdata; i++) {
+          final DocumentSnapshot? doc = snapshot.data?.docs[i];
+          final Map<String, dynamic>? data = doc?.data() as Map<String, dynamic>?;
+          if (data != null) {
+           
+            forhim += data['forhim'] ?? 0;
+            onhim += data['onhim'] ?? 0;
+          }
+        }
+        
+        // logger.i('--------- $forhim ----------- $onhim ---------');
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: SpinKitFadingCircle(
+              color: Colors.indigo[700],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Text(
+              '',
+              style: GoogleFonts.readexPro(
+                textStyle: const TextStyle(fontSize: 30),
+              ),
+            ),
+          );
+        }
+
+        //############################################
+        _recordDataSource.updateData(snapshot.data!.docs);
+        // After updating _recordDataSource with new data
+        // _recordDataSource.sortedColumns.add(const SortColumnDetails(name: 'date', sortDirection: DataGridSortDirection.descending));
+      
+        return SfDataGridTheme(
+          data: const SfDataGridThemeData(
+            sortIconColor: Colors.white,
+            headerColor: Color.fromARGB(255, 83, 143, 212),
+          ),
+
+
+          child: SfDataGrid(
+            key: key,
+            source: _recordDataSource,
+            allowSorting: true,
+            allowPullToRefresh: true,
+            columnWidthMode: ColumnWidthMode.fill,
+            //swip
+            allowSwiping: true,
+            swipeMaxOffset: 100,
+            endSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
+              return GestureDetector(
+                onTap: () {
+                  _recordDataSource.deleteRow(rowIndex);
+                },
+                child: Container(
+                  color: Colors.redAccent,
+                  child: const Center(
+                    child: Icon(Icons.delete, color: Colors.white,),
+                  )
+                )
+              );
+            },
+            startSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
+                final documentId = dataGridRow.getCells().firstWhere((cell) => cell.columnName == 'documentId').value;
+
+               return GestureDetector(
+                onTap: () {
+                  // _recordDataSource.updatedilog(context, rowIndex);
+                  editRecord(documentId, recordID);
+                },
+                child: Container(
+                  color: Colors.blueAccent,
+                  child: const Center(
+                    child: Icon(Icons.edit, color: Colors.white,),
+                  )
+                )
+              );
+            },
+            allowTriStateSorting: true,
+            footerFrozenRowsCount: 1,
+            footerHeight: 30,
+            footer: Container(
+              color: Colors.indigo[500],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  
+                  Text(
+                    'مدين: $onhim',
+                    
+                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )),
+                  ),
+
+                  const SizedBox(width: 120),
+
+                  Text(
+                    'دائن: $forhim',
+                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )),
+                  ),
+
+                  
+                ],
+              ),
+              
+            ),
+            columns: [
+              GridColumn(
+                sortIconPosition: ColumnHeaderIconPosition.start,
+                columnName: 'amount',
+                label: Center(
+                  child: Text(
+                    'الرصيد',
+                    style: GoogleFonts.readexPro(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              GridColumn(
+                allowSorting: false,
+                sortIconPosition: ColumnHeaderIconPosition.start,
+                columnName: 'state',
+                label: Center(
+                  child: Text(
+                    'الحالة',
+                    style: GoogleFonts.readexPro(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              GridColumn(
+                sortIconPosition: ColumnHeaderIconPosition.start,
+                allowSorting: false,
+                columnName: 'details',
+                label: Center(
+                  child: Text(
+                    'التفاصيل',
+                    style: GoogleFonts.readexPro(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              GridColumn(
+                sortIconPosition: ColumnHeaderIconPosition.start,
+                columnName: 'money',
+                label: Center(
+                  child: Text(
+                    'المبلغ',
+                    style: GoogleFonts.readexPro(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              GridColumn(
+                
+                sortIconPosition: ColumnHeaderIconPosition.start,
+                
+                columnName: 'date',
+                label: Center(
+                  child: Text(
+                    'التاريخ',
+                    style: GoogleFonts.readexPro(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
+
+  // ########################## addNewRecord ##########################
   Future<void> addNewRecord(recordID) {
     return showDialog(
       context: context, 
@@ -200,29 +429,35 @@ class _DisplayRecordState extends State<DisplayRecord> {
                     mainAxisSize: MainAxisSize.min,
                       children: 
                       [
-                        Form(
+                         Form(
                           key: _formKey,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                recordID['name'], 
-                                style: GoogleFonts.readexPro(textStyle: const TextStyle(
-                                fontSize: 25,
-                                fontWeight: FontWeight.w600
-                                )),
+                          child: Column(
+                            children:[
+
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    recordID['name'], 
+                                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.w600
+                                    )),
+                                  ),
+                                ),
                               ),
+
+                              const Divider(),
                               
-                            ),
+                              Row(children: [
+                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
+                                Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
+                              ]),
+                            ]
                           ),
+                          
                         ),
-                        const Divider(),
-                        
-                        Row(children: [
-                          Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
-                          Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
-                        ]),
                         
                         const SizedBox(height: 20),
                           
@@ -231,7 +466,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _image == null ? const Text('') : clickableImage(setState),
+                            _image == null ? Container() : clickableImage(setState),
                             const SizedBox(width: 10),
                             IconButton(onPressed: () => showOptions(context, setState), icon: const Icon(Icons.add_a_photo)),
                             dateButton(setState),
@@ -273,10 +508,100 @@ class _DisplayRecordState extends State<DisplayRecord> {
     }); 
     
   }
+  // ########################## EditRecord ##########################
+  Future<void> editRecord(String documentId, String recordID) async{
+    DocumentSnapshot recordDoc = await FirebaseFirestore.instance.collection('record').doc(recordID).collection('balance').doc(documentId).get();
+    return showDialog(
+      context: context, 
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.all(10),
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                      children: 
+                      [
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            children:[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                child: Align(
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '  ', 
+                                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.w600
+                                    )),
+                                  ),
+                                ),
+                              ),
+
+                              
+                              Row(children: [
+                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
+                                Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
+                              ]),
+                            ]
+                          ),
+                          
+                        ),
+            
+                        const SizedBox(height: 20),
+                          
+                        // display the date and image
+                          
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _image == null ? Container() : clickableImage(setState),
+                            const SizedBox(width: 10),
+                            IconButton(onPressed: () => showOptions(context, setState), icon: const Icon(Icons.add_a_photo)),
+                            dateButton(setState),
+                          ],
+                        ),
+                          
+                        const Divider(),
+                          
+                        const SizedBox(height: 30),
+                          
+                        // display the submit button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                           
+                          ],
+                        ),
+                          
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
+                ),
+
+              );
+            },
+          );
+        },
+    ).then((_) {
+      // Reset the form fields and image state when dialog is closed
+      setState(() {
+        amountController.clear();
+        detailsController.clear();
+        _image = null;
+        _dueDate = DateTime.now();
+      });
+    }); 
+    
+  }
   // ########################## Export Excel ##########################
   Future<void> exportToExcel() async {
     final recordID = widget.recordID;
-    double amount = 0;
 
     // Request storage permissions
     if (await _requestStoragePermission()) {
@@ -315,8 +640,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
           final DateTime date = data['date'].toDate();
           final String time = DateFormat('h:mm a').format(date);
           final String dateTime = '${date.day}-${date.month}-${date.year} \n $time';
-          amount += data['forhim'];
-          amount -= data['onhim'];
+         
 
           // Apply styling to each row
           final xlsio.Range dataRange = sheet.getRangeByIndex(i + 2, 1, i + 2, 5);
@@ -324,7 +648,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
           dataRange.cellStyle.hAlign = xlsio.HAlignType.center;
           dataRange.cellStyle.vAlign = xlsio.VAlignType.center;
           
-          sheet.getRangeByIndex(i + 2, 1).setText(amount.toString());
+          sheet.getRangeByIndex(i + 2, 1).setText(data['amount'].toString());
           sheet.getRangeByIndex(i + 2, 2).setText(data['onhim'].toString());
           sheet.getRangeByIndex(i + 2, 3).setText(data['forhim'].toString());
           sheet.getRangeByIndex(i + 2, 4).setText(data['details'].toString());
