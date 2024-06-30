@@ -1,39 +1,66 @@
-// StreamBuilder(
-//           stream: FirebaseFirestore.instance
-//               .collection('record')
-//               .doc(recordID['id'])
-//               .collection('balance') // Assuming you have a subcollection
-//               .snapshots(),
-//           builder: (context, snapshot) {
-          
+import 'package:flutter/material.dart';
 
-//             if (snapshot.hasError) {
-//               return Center(child: Text('Error: ${snapshot.error}'));
-//             }
+/// Flutter code sample for [Radio].
 
-          
-//             final subDocs = snapshot.data!.docs;
+void main() => runApp(const RadioExampleApp());
 
-//             forhim = 0;
-//             onhim = 0;
+class RadioExampleApp extends StatelessWidget {
+  const RadioExampleApp({super.key});
 
-//             // Iterate through each document in subSnapshot.data!.docs
-//             for (int i = 0; i < subDocs.length; i++) {
-//               final DocumentSnapshot? doc = snapshot.data?.docs[i];
-//               final Map<String, dynamic>? subData = doc?.data() as Map<String, dynamic>?;
-//               if (subData != null) {
-           
-//                 forhim += subData['forhim'];
-//                 onhim += subData['onhim'];
-//               }
-//             }
-//             totalamount = forhim - onhim;
-//             logger.i(totalamount);
-//             return Row(
-//               mainAxisAlignment: MainAxisAlignment.center,
-//               children: [
-//                 recordID['state'] ? Text(' دائن :  ${recordID['amount']}', style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white,)))
-//                 : Text('مدين: ${recordID['amount']}', style: GoogleFonts.readexPro(textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white,))),
-            
-//               ],
-//             ),
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Radio Sample')),
+        body: const Center(
+          child: RadioExample(),
+        ),
+      ),
+    );
+  }
+}
+
+enum SingingCharacter { lafayette, jefferson }
+
+class RadioExample extends StatefulWidget {
+  const RadioExample({super.key});
+
+  @override
+  State<RadioExample> createState() => _RadioExampleState();
+}
+
+class _RadioExampleState extends State<RadioExample> {
+  SingingCharacter? _character = SingingCharacter.lafayette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ListTile(
+          title: const Text('Lafayette'),
+          leading: Radio<SingingCharacter>(
+            value: SingingCharacter.lafayette,
+            groupValue: _character,
+            onChanged: (SingingCharacter? value) {
+              setState(() {
+                _character = value;
+              });
+            },
+          ),
+        ),
+        ListTile(
+          title: const Text('Thomas Jefferson'),
+          leading: Radio<SingingCharacter>(
+            value: SingingCharacter.jefferson,
+            groupValue: _character,
+            onChanged: (SingingCharacter? value) {
+              setState(() {
+                _character = value;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}

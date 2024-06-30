@@ -1,7 +1,9 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logger/logger.dart';
+import 'package:moneybalance/pages/display_record.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:intl/intl.dart';
 
@@ -36,14 +38,12 @@ class RecordDataSource extends DataGridSource {
 
   // Update data method
   void updateData(List<DocumentSnapshot> docs) async {
-    double amount = 0;
     _documents = docs; // Update local documents list
     _records = docs.map((doc) {
       // Process each document
-      final double money = doc['forhim'] != 0 ? doc['forhim'] : doc['onhim'];
-      amount += doc['forhim'];
-      amount -= doc['onhim'];
-      final DateTime date = doc['createdAt'].toDate();
+     final double money = (doc['forhim'] != 0 ? doc['forhim'] : doc['onhim']).toDouble();
+
+      final DateTime date = doc['date'].toDate();
       final String time = DateFormat('h:mm:ss a').format(date);
 
 
@@ -133,33 +133,41 @@ class RecordDataSource extends DataGridSource {
     }
   }
 
-  Future<void> updateRow (int index) async{
+  Future<void> updateRow (int index, String details, double amount, String? image, DateTime date, Type? selectedType) async{
     try {
       String parentId = _documents[index].reference.parent.parent!.id;
       String balanceId = _documents[index].id;
       
       //first call the main colloection 
-      DocumentSnapshot recordDocument = await FirebaseFirestore.instance
-        .collection('record')
-        .doc(parentId)
-        .get();
 
-      DocumentSnapshot balanceDocument = await FirebaseFirestore.instance
+      DocumentReference balanceDocument = FirebaseFirestore.instance
         .collection('record')
         .doc(parentId)
         .collection('balance')
-        .doc(balanceId)
-        .get();
+        .doc(balanceId);
+      if(selectedType == Type.forhim){
+        balanceDocument.update({
+          'details': details,
+          'date': date,
+          'forhim': amount,
+          'onhim': 0,
+          'image': image
+        });
+      }else{
+         balanceDocument.update({
+          'details': details,
+          'date': date,
+          'forhim': 0,
+          'onhim': amount,
+          'image': image
 
-      // Calculate the new amount
-      double newAmount = recordDocument['amount'];
-      if (balanceDocument['forhim'] != 0) {
-        newAmount -= balanceDocument['forhim'];
-      } else {
-        newAmount += balanceDocument['onhim'];
+        });
       }
+      
 
-     
+      recalculateAmounts(parentId);
+
+
     } catch (e) {
       logger.e(e);
     }

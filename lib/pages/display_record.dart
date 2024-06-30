@@ -33,11 +33,14 @@ class DisplayRecord extends StatefulWidget {
   @override
   State<DisplayRecord> createState() => _DisplayRecordState();
 }
+  enum Type { forhim, onhim}
 
 class _DisplayRecordState extends State<DisplayRecord> {
+  
+  Type? _selectedType = Type.forhim;
   final Logger logger = Logger();
-  final detailsController = TextEditingController();
-  final amountController = TextEditingController();
+  var detailsController = TextEditingController();
+  var amountController = TextEditingController();
   late DateTime _dueDate;
   final _formKey = GlobalKey<FormState>();
   File? _image;
@@ -48,6 +51,8 @@ class _DisplayRecordState extends State<DisplayRecord> {
   double totalamount = 0;  
   late RecordDataSource _recordDataSource;
   final GlobalKey<SfDataGridState> key = GlobalKey<SfDataGridState>();
+
+
 
   @override
   void initState() {
@@ -70,6 +75,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
     final recordID = widget.recordID;
     
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
@@ -98,7 +104,6 @@ class _DisplayRecordState extends State<DisplayRecord> {
           ),
         ],
       ),
-      resizeToAvoidBottomInset: true,
       body: BlocListener<RecordBloc, RecordState>(
         bloc: BlocProvider.of<RecordBloc>(context),
         listener: (BuildContext context, state) {
@@ -264,7 +269,67 @@ class _DisplayRecordState extends State<DisplayRecord> {
             endSwipeActionsBuilder: (context, dataGridRow, rowIndex) {
               return GestureDetector(
                 onTap: () {
-                  _recordDataSource.deleteRow(rowIndex);
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return Dialog(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  ' هل تريد الحذف ؟',
+                                  style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                                    fontSize: 20,
+                                
+                                  )),
+                                  
+                                ),
+                              ),
+                          
+                              const SizedBox(height: 30),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                 
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                                                
+                                    child: Text(
+                                      'لا',
+                                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                                        fontSize: 20,
+                                        color: Colors.redAccent
+                                      )),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 30),
+                              
+                                  TextButton(
+                                    onPressed: () => {
+                                      _recordDataSource.deleteRow(rowIndex),
+                                      Navigator.pop(context)
+                                    },
+                                                                
+                                    child: Text(
+                                      'نعم',
+                                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                                        fontSize: 20,
+                                        color: Colors.redAccent
+                                      )),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
                 },
                 child: Container(
                   color: Colors.redAccent,
@@ -280,7 +345,7 @@ class _DisplayRecordState extends State<DisplayRecord> {
                return GestureDetector(
                 onTap: () {
                   // _recordDataSource.updatedilog(context, rowIndex);
-                  editRecord(documentId, recordID);
+                  editRecord(documentId, recordID, rowIndex);
                 },
                 child: Container(
                   color: Colors.blueAccent,
@@ -289,6 +354,25 @@ class _DisplayRecordState extends State<DisplayRecord> {
                   )
                 )
               );
+            },
+            onCellTap: (details) {
+              int rowIndex = details.rowColumnIndex.rowIndex;
+              
+              // Skip the header row
+              if (rowIndex == 0) return;
+
+              // Retrieve the document ID from the tapped row
+              final documentId = _recordDataSource.effectiveRows[rowIndex - 1]
+                .getCells()
+                .firstWhere((cell) => cell.columnName == 'documentId')
+              .value;
+              
+              final state = _recordDataSource.effectiveRows[rowIndex - 1]
+                .getCells()
+                .firstWhere((cell) => cell.columnName == 'state')
+              .value;
+
+              didplayData(documentId,state);
             },
             allowTriStateSorting: true,
             footerFrozenRowsCount: 1,
@@ -451,8 +535,8 @@ class _DisplayRecordState extends State<DisplayRecord> {
                               const Divider(),
                               
                               Row(children: [
-                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
                                 Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
+                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
                               ]),
                             ]
                           ),
@@ -509,8 +593,19 @@ class _DisplayRecordState extends State<DisplayRecord> {
     
   }
   // ########################## EditRecord ##########################
-  Future<void> editRecord(String documentId, String recordID) async{
+  Future<void> editRecord(String documentId, String recordID, int rowIndex) async{
     DocumentSnapshot recordDoc = await FirebaseFirestore.instance.collection('record').doc(recordID).collection('balance').doc(documentId).get();
+    amountController.text = (recordDoc['forhim'] - recordDoc['onhim']).toString();
+    detailsController.text = recordDoc['details'];
+    
+    //date
+    Timestamp timestamp = recordDoc['date']; 
+    _dueDate = timestamp.toDate();
+
+    //image
+    _image = recordDoc['image'] != null ? File(recordDoc['image']) : null;
+
+
     return showDialog(
       context: context, 
       builder: (context) {
@@ -524,35 +619,24 @@ class _DisplayRecordState extends State<DisplayRecord> {
                     mainAxisSize: MainAxisSize.min,
                       children: 
                       [
+                        const SizedBox(height: 30),
+
                         Form(
                           key: _formKey,
                           child: Column(
                             children:[
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                child: Align(
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '  ', 
-                                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
-                                      fontSize: 25,
-                                      fontWeight: FontWeight.w600
-                                    )),
-                                  ),
-                                ),
-                              ),
-
-                              
+                            
                               Row(children: [
-                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
                                 Flexible(child: TextFormFildAdd(hinttext: 'التفاصيل',controller: detailsController ,inputnumber: false, keyboardtype: TextInputType.text, padding: 20.00)),
+                                Flexible(child: TextFormFildAdd(hinttext: 'المبلغ',controller: amountController , inputnumber: true, keyboardtype: TextInputType.number, padding: 20.00)),
                               ]),
+
                             ]
                           ),
                           
                         ),
             
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
                           
                         // display the date and image
                           
@@ -565,16 +649,112 @@ class _DisplayRecordState extends State<DisplayRecord> {
                             dateButton(setState),
                           ],
                         ),
-                          
-                        const Divider(),
-                          
-                        const SizedBox(height: 30),
-                          
-                        // display the submit button
+                        
+                        const SizedBox(height: 10),
+
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                            
+
+                            Radio<Type>(
+                              activeColor: Colors.indigo[600],
+                              
+                              value: Type.onhim, 
+                              groupValue: _selectedType, 
+                              onChanged: (Type? value) {
+                                setState(() {
+                                  _selectedType = value;
+                                });
+                              },
+                            ),
+                            Text(
+                              'مدين',
+                              style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                              )),
+                            ),
+
+                             Radio<Type>(
+                              activeColor: Colors.indigo[600],
+
+                              value: Type.forhim, 
+                              groupValue: _selectedType, 
+                              onChanged: (Type? value) {
+                                setState(() {
+                                  _selectedType = value;
+                                });
+                              },
+                            ),
+                           Text(
+                              'دائن',
+                              style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                              )),
+                            ),
+                          ],
+                        ),
+
+                        const Divider(),
+                          
+                        const SizedBox(height: 20),
+                          
+                        // display the submit button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                        
+                            ElevatedButton(
+                              onPressed: () { Navigator.pop(context);},
+                              style: ButtonStyle(
+                                backgroundColor: WidgetStateColor.resolveWith((states) => Colors.redAccent),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white
+                                )),
+
+                              ),
+                            ),
+
+
+                            ElevatedButton(
+                              onPressed: () {
+                                _recordDataSource.updateRow(
+                                  rowIndex, 
+                                  detailsController.text,
+                                  double.parse(amountController.text),
+                                  _imagePath, 
+                                  _dueDate, 
+                                  _selectedType
+                                
+                                
+                                );
+                                Navigator.pop(context);
+
+                              },
+
+
+                              style: ButtonStyle(
+                                backgroundColor: WidgetStateColor.resolveWith((states) => Colors.greenAccent),
+                              ),
+                              child: Text(
+                                'Confirm',
+                                style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white
+                                )),
+
+                              ),
+                            ),
                           ],
                         ),
                           
@@ -599,6 +779,180 @@ class _DisplayRecordState extends State<DisplayRecord> {
     }); 
     
   }
+  // ########################## EditRecord ##########################
+  Future<void> didplayData(String documentId, bool state) async {
+        final recordID = widget.recordID;
+
+    DocumentSnapshot recordDoc = await FirebaseFirestore.instance.collection('record').doc(recordID['id']).collection('balance').doc(documentId).get();
+    //date
+    final DateTime date = recordDoc['date'].toDate();
+    final String time = DateFormat('h:mm a').format(date);
+
+    //image 
+     _image = recordDoc['image'] != null ? File(recordDoc['image']) : null;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      state ? const Icon(Icons.keyboard_arrow_up_sharp, color: Colors.greenAccent, size: 40,) : const Icon(Icons.keyboard_arrow_down_sharp, color: Colors.redAccent, size: 40,),
+                      const Spacer(),
+                      Text(
+                      recordID['name'],
+                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+            
+            
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      (recordDoc['forhim'] - recordDoc['onhim']).toString(),
+                       style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '-: المبلغ',
+                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+            
+            
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${date.day}-${date.month}-${date.year}',
+                       style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '-: التاريخ',
+                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      time,
+                       style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '-: الوقت',
+                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${recordDoc['details']}',
+                       style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '-: التفاصيل',
+                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                if( _image != null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _image == null ? Container() : clickableImage(setState),
+
+                    const Spacer(),
+                    Text(
+                      '-: صورة',
+                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600
+                          
+                        )
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      });
+  }
+  
   // ########################## Export Excel ##########################
   Future<void> exportToExcel() async {
     final recordID = widget.recordID;
@@ -773,30 +1127,34 @@ class _DisplayRecordState extends State<DisplayRecord> {
             builder: (BuildContext context) {
               return Dialog(
                 backgroundColor: Colors.transparent,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    InteractiveViewer(child: Image.file(_image!)),
-                    const SizedBox(height: 50),
-                    ElevatedButton(
-                      onPressed: () {
-                        deleteImage(setState);
-                      },
-                      style: const ButtonStyle(
-                        padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 90)),
-                      ),
-                      child: Text(
-                        'حذف',
-                        style: GoogleFonts.readexPro(
-                          textStyle: const TextStyle(
-                            fontSize: 20,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InteractiveViewer(child: Image.file(_image!)),
+                        const SizedBox(height: 50),
+                        ElevatedButton(
+                          onPressed: () {
+                            deleteImage(setState);
+                          },
+                          style: const ButtonStyle(
+                            padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 90)),
+                          ),
+                          child: Text(
+                            'حذف',
+                            style: GoogleFonts.readexPro(
+                              textStyle: const TextStyle(
+                                fontSize: 20,
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },
