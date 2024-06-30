@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
               child: Text('Error: ${snapshot.error}'),
             );
           }
-      
+          
           // if correct
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -214,7 +214,7 @@ class _HomePageState extends State<HomePage> {
                               const Spacer(), // Adjust spacing as needed
                               // const SizedBox(width: 15),
                               IconButton(
-                                onPressed: () {}, 
+                                onPressed: () => Navigator.pushNamed(context, '/addNewData', arguments: documentData = {'name': data['name'], 'id': data.id}), 
                                 icon: Icon(Icons.add, size: 30, color: Colors.blue[900]),
                               ),  
                             

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moneybalance/bloc/record_bloc.dart';
+import 'package:moneybalance/pages/add_new_data_for_record.dart';
 import 'package:moneybalance/pages/new_record.dart';
 import 'package:moneybalance/pages/display_record.dart';
 import 'package:moneybalance/pages/home_page.dart';
@@ -31,6 +32,13 @@ void main() async {
           final args = settings.arguments as Map<String, dynamic>; 
 
           return MaterialPageRoute(builder: (context) => DisplayRecord(recordID: args,));
+        }
+
+         if(settings.name == '/addNewData'){
+          // Pass the argument to DisplayRecord widget
+          final args = settings.arguments as Map<String, dynamic>; 
+
+          return MaterialPageRoute(builder: (context) => AddNewData(recordID: args,));
         }
       
         return null; // Handle other routes here if necessary

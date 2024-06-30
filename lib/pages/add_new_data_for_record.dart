@@ -2,9 +2,11 @@
 
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
@@ -14,15 +16,16 @@ import 'package:moneybalance/bloc/record_state.dart';
 import 'package:moneybalance/components/text_fild_add.dart';
 import 'package:path_provider/path_provider.dart';
 
-class AddRecord extends StatefulWidget {
-  
-  const AddRecord({super.key});
+class AddNewData extends StatefulWidget {
+    final Map<String, dynamic> recordID;
+
+  const AddNewData({super.key, required this.recordID});
 
   @override
-  State<AddRecord> createState() => _AddRecordState();
+  State<AddNewData> createState() => _AddNewDataState();
 }
 
-class _AddRecordState extends State<AddRecord> {
+class _AddNewDataState extends State<AddNewData> {
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   final Logger logger = Logger();
@@ -52,6 +55,8 @@ class _AddRecordState extends State<AddRecord> {
 
   @override
   Widget build(BuildContext context) {
+    final recordID = widget.recordID;
+    nameController.text = recordID['name'];
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
@@ -118,17 +123,61 @@ class _AddRecordState extends State<AddRecord> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          iconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded),
+                          iconButtonOnhim('مدين', Colors.red, Icons.keyboard_arrow_down_rounded, recordID['id'], recordID['name']),
                           const SizedBox(width: 20),
-                          iconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded),
+                          iconButtonForhim('دائن', Colors.green, Icons.keyboard_arrow_up_rounded, recordID['id'], recordID['name']),
                         ],
                       )
                     ],
                   ),
                 ),
 
+              //   StreamBuilder(
+              //    stream: FirebaseFirestore.instance.collection('record').doc(recordID['id']).collection('balance').snapshots(),
+              //    builder: (context, snapshot) {
+              //     if (snapshot.hasError) {
+              //       return Center(
+              //         child: Text('Error: ${snapshot.error}'),
+              //       );
+              //     }
+                    
+              //     // if correct
+              //     if (snapshot.connectionState == ConnectionState.waiting) {
+              //       return Center(
+              //         child: SpinKitFadingCircle(
+              //           color: Colors.blue[900],
+              //         ),
+              //       );
+              //     }
+                  
+              //     // if no data in collection
+              //     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              //       return const Text('');
+              //     }
+              //     return ListView.builder(
+              //       itemCount: snapshot.data!.docs.length,
+              //       itemBuilder: (BuildContext context, int index) {
+              //         //if has error 
+                        
+              //         // final data = snapshot.data!.docs[index];
+              //         // final totalAmount = data['amount'].toString();
+              //         return const Column(
+              //           children: [
+              //             Row(
+              //             children: [
+              //               Text('totalAmount')
+              //             ],
+              //           ),
+              //           ],
+                        
+              //         );
+              //       },
+              //     );
+              //   },
+              // ),
+
                 
-              ]
+            ]
             ),
           ),
         ),
@@ -139,22 +188,38 @@ class _AddRecordState extends State<AddRecord> {
   //##################################################################################################################################
 
   // button icon
-  Widget iconButtonForhim(String title, Color? color, IconData? icon) {
+  Widget iconButtonForhim(String title, Color? color, IconData? icon, String id, String name) {
     return ElevatedButton.icon(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
-          context.read<RecordBloc>().add(
-            AddRecordEvent(
-              name: nameController.text,
-              details: detailsController.text,
-              amount: double.parse(amountController.text),
-              date: _dueDate,
-              createdAt: DateTime.now(),
-              imagePath: _imagePath,
-              forhim: double.parse(amountController.text),
-              onhim: 0
-            ),
-          );
+          if(name != nameController.text){
+            context.read<RecordBloc>().add(
+              AddRecordEvent(
+                name: nameController.text,
+                details: detailsController.text,
+                amount: double.parse(amountController.text),
+                date: _dueDate,
+                createdAt: DateTime.now(),
+                imagePath: _imagePath,
+                forhim: double.parse(amountController.text),
+                onhim: 0
+              ),
+            );
+          }else{
+            context.read<RecordBloc>().add(
+              AddSubRecordEvent(
+                id: id,
+                details: detailsController.text,
+                amount: double.parse(amountController.text),
+                date: _dueDate,
+                createdAt: DateTime.now(),
+                imagePath: _imagePath,
+                forhim: double.parse(amountController.text),
+                onhim: 0
+              ),
+            );
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('تم الأضافة بنجاح', style: GoogleFonts.readexPro(), textAlign: TextAlign.right),
@@ -182,22 +247,37 @@ class _AddRecordState extends State<AddRecord> {
 
 
 
-  Widget iconButtonOnhim(String title, Color? color, IconData? icon) {
+  Widget iconButtonOnhim(String title, Color? color, IconData? icon, String id, String name) {
     return ElevatedButton.icon(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
-         context.read<RecordBloc>().add(
-            AddRecordEvent(
-              name: nameController.text,
-              details: detailsController.text,
-              amount: double.parse(amountController.text),
-              date: _dueDate,
-              createdAt: DateTime.now(),
-              imagePath: _imagePath,
-              forhim: 0,
-              onhim: double.parse(amountController.text)
-            ),
-          );
+        if(name != nameController.text){
+            context.read<RecordBloc>().add(
+              AddRecordEvent(
+                name: nameController.text,
+                details: detailsController.text,
+                amount: double.parse(amountController.text),
+                date: _dueDate,
+                createdAt: DateTime.now(),
+                imagePath: _imagePath,
+                forhim:0,
+                onhim: double.parse(amountController.text)
+              ),
+            );
+          }else{
+            context.read<RecordBloc>().add(
+              AddSubRecordEvent(
+                id: id,
+                details: detailsController.text,
+                amount: double.parse(amountController.text),
+                date: _dueDate,
+                createdAt: DateTime.now(),
+                imagePath: _imagePath,
+                forhim: 0,
+                onhim: double.parse(amountController.text)
+              ),
+            );
+          }
          
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(
