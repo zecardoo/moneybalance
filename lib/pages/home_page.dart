@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,6 +26,19 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          title: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'عام',
+              style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                
+              )),
+            ),
+          ),
+          
         ),
         
         body: displayRecord(),
@@ -110,7 +124,10 @@ class _HomePageState extends State<HomePage> {
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (BuildContext context, int index) {
               final data = snapshot.data!.docs[index];
-                
+              // get the id of the data 
+              final docsID = data.id;
+              // get the data of that id doc to update or delete 
+              final documentReference = FirebaseFirestore.instance.collection('record').doc(docsID);
               final subCollection = FirebaseFirestore.instance.collection('record').doc(data.id).collection('balance').orderBy('createdAt', descending: true);
               
               return Column(
@@ -162,63 +179,162 @@ class _HomePageState extends State<HomePage> {
 
                       
 
-                      return   GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
-                        child: Padding(
-                          padding: const EdgeInsets.all(0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center, // Adjust as needed
-                            children: [
-                              forhim > onhim ? const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30) : const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.red, size: 30),
-                                  
-                              const Spacer(), // Adjust spacing as needed
-                                  
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                   '${data['amount']}',
-                                  style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700])),
-                            
-                                ),
-                              ),
-                                
-                              const Spacer(), // Adjust spacing as needed
-
-                              Container(
-                                margin: const EdgeInsets.all(10),
-                                width: 30,
-                                height: 30,
-                                decoration: const BoxDecoration(
-                                  color: Colors.blueAccent,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
+                      return Dismissible(
+                        
+                        key:  Key(docsID),
+                        onDismissed: (direction) {
+                          // Implement deletion logic here
+                          documentReference.delete().then((_) {
+                            logger.i('----------[ Deleted Successfully ]----------');
+                          }).catchError((onError) {
+                            logger.e('Error: $onError');
+                          });
+                        },
+                        confirmDismiss: (direction) {
+                          return showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: Align(
+                                  alignment: Alignment.centerRight,
                                   child: Text(
-                                  '$subDocCount',
-                                  style: GoogleFonts.readexPro(textStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+                                    'تأكيد الحذف',
+                                    style: GoogleFonts.readexPro(textStyle: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black
+                                    )),
+                                  ),
                                 ),
+                                content: Text(
+                                  'سيتم حذف جميع المبالغ المرتبطة بهذا الحساب, هل تريد الحذف ؟',
+                                  style: GoogleFonts.readexPro(textStyle: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[800] 
+                                  )),
                                 ),
-                              ), 
-                            
+                                actions: [
+                                   TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                                                
+                                    child: Text(
+                                      'لا',
+                                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.redAccent
+                                      )),
+                                    ),
+                                  ),
+                                  
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop(); // Close the dialog
+                                      // Implement deletion logic here
+                                      documentReference.delete().then((_) {
+                                        logger.i('----------[ Deleted Successfully ]----------');
+                                      }).catchError((onError) {
+                                        logger.e('Error: $onError');
+                                      });
+                                    },
+                                    child: Text(
+                                      'نعم',
+                                      style: GoogleFonts.readexPro( textStyle: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.redAccent
+                                      )),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        background: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.redAccent
+                            ),
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: const Icon(Icons.delete, color: Colors.white),
+                    
+                          ),
+                        ),
+                        secondaryBackground: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.redAccent
+                            ),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: const Icon(Icons.delete, color: Colors.white),
+                    
+                          ),
+
+                          
+                        ),
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/displayRecord', arguments: documentData = {'name': data['name'], 'id': data.id}),
+                          child: Padding(
+                            padding: const EdgeInsets.all(0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center, // Adjust as needed
+                              children: [
+                                forhim > onhim ? const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.green, size: 30) : const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.red, size: 30),
+                                    
+                                const Spacer(), // Adjust spacing as needed
+                                    
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                     '${data['amount']}',
+                                    style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700])),
                               
-                              const Spacer(), // Adjust spacing as needed
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  data['name'],
-                                  style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.grey[700])),
-                                  textAlign: TextAlign.right,
+                                  ),
                                 ),
-                              ),
+                                  
+                                const Spacer(), // Adjust spacing as needed
+                        
+                                Container(
+                                  margin: const EdgeInsets.all(10),
+                                  width: 30,
+                                  height: 30,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.blueAccent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                    '$subDocCount',
+                                    style: GoogleFonts.readexPro(textStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+                                  ),
+                                  ),
+                                ), 
+                              
                                 
-                              const Spacer(), // Adjust spacing as needed
-                              // const SizedBox(width: 15),
-                              IconButton(
-                                onPressed: () => Navigator.pushNamed(context, '/addNewData', arguments: documentData = {'name': data['name'], 'id': data.id}), 
-                                icon: Icon(Icons.add, size: 30, color: Colors.blue[900]),
-                              ),  
-                            
-                            ],
+                                const Spacer(), // Adjust spacing as needed
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    data['name'],
+                                    style: GoogleFonts.readexPro(textStyle:  TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.grey[700])),
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                                  
+                                const Spacer(), // Adjust spacing as needed
+                                // const SizedBox(width: 15),
+                                IconButton(
+                                  onPressed: () => Navigator.pushNamed(context, '/addNewData', arguments: documentData = {'name': data['name'], 'id': data.id}), 
+                                  icon: Icon(Icons.add, size: 30, color: Colors.blue[900]),
+                                ),  
+                              
+                              ],
+                            ),
                           ),
                         ),
                       );
